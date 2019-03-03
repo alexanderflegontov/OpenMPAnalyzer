@@ -1,59 +1,53 @@
-#include <stdlib.h> // system
-#include <stdio.h> // printf
-#include <string> // string
-
-/*
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
+#include <cstdlib> // system
+#include <cstdio>
 #include <string>
-#include <sstream>
-#include <cstring>
-#include <string.h>
 
-#include <stddef.h>
-#include <time.h>
-#include <sys/sysinfo.h>
+#define MAIN_ARGS
+#define DEBUG 0
+#define LOG(fmt)  do { if (DEBUG) printf(fmt); } while (0)
+#define LOG_ARGS(fmt, ...)  do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
 
-#include <string.h> // memset
-#include <iomanip>
-*/
-
-int main(int argc, char* argv[]){
-
-	// print all args
-	printf("print all args [%d]\n", argc);
-	for(int i = 0; i < argc; i++){
-		printf("~~%s \n", argv[i]);	
+int main(int argc, char* argv[])
+{
+#ifdef MAIN_ARGS
+	LOG_ARGS("Print all args [%d]\n", argc);
+	for(int i = 0; i < argc; ++i)
+	{
+		LOG_ARGS("~~%s\n", argv[i]);
 	}
-
-	printf("HI~~!!!\n");
+	LOG("\n");
+#endif
+	LOG("START~~!!!\n");
 
 	//system("dir");
-	std::string str = "";
-	if(argc >= 4){
+	std::string str;
+	if(argc >= 4)
+	{
 		//argv[1] the path to pin
 		//argv[2] the path to pintool
 		//argv[3] the path to app
-		//argv[4..] the args in app 
+		//argv[4..] the args in app
 		str = str + argv[1] + " -t " + argv[2] + " -- " + argv[3];
-		// Addition args of the called app
-		if(argc >= 5){
-			for(int i = 4; i < argc; i++){
-				str = str + " " +  argv[i];	
-			}	
+		// Additional args of the called app
+		if(argc >= 5)
+		{
+			for(int i = 4; i < argc; ++i)
+			{
+				str = str + " " + argv[i];
+			}
 		}
-	}else{
-		printf("~~ \nThere are not enough arguments to run \n");		
+	}
+	else
+	{
+		LOG("~~ \nThere are not enough arguments to run\n");
 	}
 
-	// Sammarize
-	printf("~~ \nSammarize:\n %s \n\n", str.c_str());
+	LOG_ARGS("~~ \nSummarize:\n %s \n\n", str.c_str());
 
 	// Call the app
 	system(str.c_str());
 
-	printf("BYE~~!!!\n");
+	LOG("END~~!!!\n");
 
 	return 0;
 }
