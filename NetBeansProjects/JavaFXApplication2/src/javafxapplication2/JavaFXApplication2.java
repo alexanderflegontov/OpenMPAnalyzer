@@ -166,62 +166,54 @@ public class JavaFXApplication2 extends Application  {
         }
     }    
     
-    private void Button2ActionPerformed(Stage primaryStage){                                         
+    private void Button2ActionPerformed(Stage primaryStage) {                                         
         System.out.println("Button2 is pressed");
  
-        String strAppPath = selectedAppTextField.getText();
-        File file = new File(strAppPath);
-        if(file != null)
-        {
-            System.out.println(" File: " + strAppPath + " is found! ");
-            System.out.println(" file.getName(): " + file.getName() + "");
-            System.out.println(" file.getPath(): " + file.getPath() + "");
-            System.out.println(" file.getAbsolutePath(): " + file.getAbsolutePath() + "");
-            String strProgName = file.getName();
-            
-            String strAppArgs = "";
-            if(appParamTextField.getText() != ""){
-                strAppArgs = appParamTextField.getText();
-                System.out.println(" strAppArgs: " + strAppArgs);
-            }
-            
-            
-            System.out.println("=================StartTrace==================");
-            primaryStage.setTitle("Tracing app " + strProgName);
-            
-            //AnalyzeData.RemovePreviousResultFiles("");
-
-            Trace trace = new Trace(file.getAbsolutePath(), strAppArgs);
-            trace.Start();
-            primaryStage.setTitle("Tracing " + strProgName + " - is completed!");
-            
-            
-            System.out.println("=================StartAnalyzeData============");
-            primaryStage.setTitle("Start analyzing the data" + strProgName);
-
-            AnalyzeData analyzeData = new AnalyzeData();
-
-            final String strMyPinToolOut = "myPinTool.out";
-            final String strPathPinTool = "./";//"/home/hp/Documents/pin-3.5-97503-gac534ca30-gcc-linux/source/tools/ManualExamples/";
-            //final String strPinToolOutfile = strPathPinTool+strMyPinToolOut;
-            final String strPinToolOutfile = AnalyzeData.DEFAULT_PINTOOL_OUT_PATH+AnalyzeData.DEFAULT_PINTOOL_OUT;
-
-            Map TableStatisticaThreads = analyzeData.Start(strPinToolOutfile);
-            primaryStage.setTitle("Analysis " + strProgName + " is completed!");
-
-            
-            System.out.println("=================StartCreateBarChart=========");
-            primaryStage.setTitle("Start building diagrams");
-            StatWindow.Show(TableStatisticaThreads);
-            //infoBoard.ShowStatForAllThread();
-
-            primaryStage.setTitle("The end building diagrams");
-        }
-        else
-        {
+        final String strAppPath = selectedAppTextField.getText();
+        final File file = new File(strAppPath);
+        if(file == null) {
             System.out.println(" File: " + strAppPath + " is not found! ");
+            return;
         }
-    }                                        
+        System.out.println(" File: " + strAppPath + " is found! ");
+        System.out.println(" file.getName(): " + file.getName() + "");
+        System.out.println(" file.getPath(): " + file.getPath() + "");
+        System.out.println(" file.getAbsolutePath(): " + file.getAbsolutePath() + "");
+        String strProgName = file.getName();
+
+        String strAppArgs = "";
+        if(!appParamTextField.getText().isEmpty()) {
+            strAppArgs = appParamTextField.getText();
+            System.out.println(" strAppArgs: " + strAppArgs);
+        }
+
+        DataAnalyzer.RemovePreviousResultFiles("");
+                
+        System.out.println("=================StartTrace==================");
+        primaryStage.setTitle("Tracing app " + strProgName);
+        Trace trace = new Trace(file.getAbsolutePath(), strAppArgs);
+        trace.Start();
+        primaryStage.setTitle("Tracing " + strProgName + " - is completed!");
+
+        System.out.println("=================StartAnalyzeData============");
+        primaryStage.setTitle("Start analyzing the data" + strProgName);
+
+        final String strPinToolOutfile = DataAnalyzer.DEFAULT_PINTOOL_OUT_PATH+DataAnalyzer.DEFAULT_PINTOOL_OUT_CONF;
+        DataAnalyzer analyzeData = new DataAnalyzer();
+        Map TableStatisticaThreads = analyzeData.Start(strPinToolOutfile);
+        primaryStage.setTitle("Analysis " + strProgName + " is completed!");
+        if(TableStatisticaThreads == null)
+        {
+            System.out.println("Analyze of Data is finished with false");
+            return;
+        }
+        
+        System.out.println("=================StartCreateBarChart=========");
+        primaryStage.setTitle("Start building diagrams");
+        StatWindow.Show(TableStatisticaThreads);
+        //infoBoard.ShowStatForAllThread();
+        primaryStage.setTitle("The end building diagrams");
+    }                                     
 
     private HBox ShowAppChoice(int sceneWidth, Stage stageForButtonAction){
 

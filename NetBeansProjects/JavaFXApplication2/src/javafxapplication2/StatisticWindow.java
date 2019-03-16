@@ -29,7 +29,7 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Line;
-import javafxapplication2.AnalyzeData.Mark;
+import javafxapplication2.DataAnalyzer.Mark;
 
 //import javafxapplication2.Form.MappingFuncNames;
 import static javafxapplication2.SettingWindow.*;
@@ -123,7 +123,7 @@ public class StatisticWindow extends Group{
             //Trace trace = new Trace(file);
             //trace.Start();
             System.out.println("=================StartAnalyzeData============");
-            AnalyzeData analyzeData = new AnalyzeData();
+            DataAnalyzer analyzeData = new DataAnalyzer();
             final String strPinToolOutfile = file.getAbsolutePath();
             Map TableStatisticaThreads = analyzeData.Start(strPinToolOutfile);
             System.out.println("=================StartCreateBarChart=========");

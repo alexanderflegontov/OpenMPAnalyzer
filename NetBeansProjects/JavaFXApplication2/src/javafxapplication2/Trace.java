@@ -18,71 +18,58 @@ import java.util.Map;
  * @author HP
  */
 public class Trace{
-            public static final String RunExe = "/home/hp/Documents/pintool_trigger.exe"; 
-            public static final String StrNamePinTool = "myPinTool.so";
+        public static final String RunExe = "/home/hp/Documents/pintool_trigger.exe"; 
+
+        public static final String strPathPin = "/home/hp/Documents/pin-3.5-97503-gac534ca30-gcc-linux/";
+        public static final String strRunPinToolexe = strPathPin + "pin";
+
+        public static final String strPathPinTool= strPathPin+"source/tools/ManualExamples/obj-intel64/";
+        public static final String StrNamePinTool = "myPinTool.so";
+
+        private final String strPathToAnalyze;
+        private final String strAppArgs;
+        private final String strExeParam;
             
-            String strPathToAnalyze;
-            String strPathPin;
-            String strRunPinToolexe;
-            String strPathPinTool;
-            String strExeParam;
-            String strAppArgs;
-            
-            Trace(String strExecutableFile, String appArgs){
-                strPathToAnalyze = strExecutableFile;
-                strAppArgs = appArgs;
-                
-                strPathPin = "/home/hp/Documents/pin-3.5-97503-gac534ca30-gcc-linux/";
-                strRunPinToolexe = strPathPin + "pin";
-                strPathPinTool = strPathPin+"source/tools/ManualExamples/obj-intel64/";
-                strExeParam = " -t " + strPathPinTool + StrNamePinTool + " --" + strPathToAnalyze;
-            }
+        public Trace(String strExecutableFile, String appArgs){
+            strPathToAnalyze = strExecutableFile;
+            strAppArgs = appArgs;
+            strExeParam = " -t " + strPathPinTool + StrNamePinTool + " -- " + strPathToAnalyze;
+        }
             
             
-        public void Start(){
-                            
-                ///ProcessBuilder BuilderPinTool = new ProcessBuilder(strRunPinToolexe, strExeParam);
+        public void Start() {
+            //ProcessBuilder BuilderPinTool = new ProcessBuilder(strRunPinToolexe, strExeParam);
 //                List<String> params = java.util.Arrays.asList(RunExe, strRunPinToolexe ,  strPathPinTool + StrNamePinTool, strPathToAnalyze, strAppArgs);//"-arg1", "-arg2");
 //                ProcessBuilder BuilderPinTool = new ProcessBuilder(params);
-                ProcessBuilder BuilderPinTool = new ProcessBuilder(RunExe, strRunPinToolexe ,  strPathPinTool + StrNamePinTool, strPathToAnalyze, strAppArgs);  
-                
-                BuilderPinTool.environment().put( "PINTOOL", strPathPin );
-                BuilderPinTool.redirectErrorStream( true );
+            ProcessBuilder BuilderPinTool = new ProcessBuilder(RunExe, strRunPinToolexe ,  strPathPinTool + StrNamePinTool, strPathToAnalyze, strAppArgs);          
+            BuilderPinTool.environment().put( "PINTOOL", strPathPin );
+            BuilderPinTool.redirectErrorStream(true);
 
-                Process processPinTool = null;
-                try {
-                    System.out.println("START");
-                    processPinTool = BuilderPinTool.start();
-                } catch (IOException ex) {
+            Process processPinTool = null;
+            try {
+                System.out.println("START");
+                processPinTool = BuilderPinTool.start();
+            } catch (IOException ex) {
+                //Logger.getLogger(Form.class.getName()).log(Level.SEVERE, null, ex);
+            }
+////
+            if(processPinTool != null){
+                //jTextField2.setText("XAXA:");
+                //jTextField2.add("Out of OpenMP app:\n", this);
+                try ( BufferedReader br = new BufferedReader(new InputStreamReader(processPinTool.getInputStream())) ) {
+                    System.out.println("[APP OUT]:");
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        System.out.println("+ " + line);
+                        //jTextField2.add(line, this);
+                    }
+                    processPinTool.waitFor();
+                    System.out.println("END");
+                } catch (IOException | InterruptedException ex) {
                     //Logger.getLogger(Form.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
-////
-                if(processPinTool != null){
-                    //String StrBegin = "Out of OpenMP app:\n";
-                    //jTextField2.setText("XAXA:");
-                    //jTextField2.add(StrBegin, this);
-                    try ( BufferedReader br = new BufferedReader(new InputStreamReader(processPinTool.getInputStream())) ) {
-                        System.out.println("[APP OUT]:");
-                        String line;
-                        while ((line = br.readLine()) != null) {
-                            System.out.println("+ " + line);
-                            //jTextField2.add(line, this);
-                        }
-                    } catch (IOException ex) {
-                        //Logger.getLogger(Form.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-
-                    try {
-                        processPinTool.waitFor();
-                        System.out.println("END");
-                    } catch (InterruptedException ex) {
-                        //Logger.getLogger(Form.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-////                
+            }         
         }
-    
         
         public void Start1() throws IOException{
             List<String> params = java.util.Arrays.asList(strRunPinToolexe, 
@@ -91,7 +78,6 @@ public class Trace{
             
             List<String> command = new ArrayList<>();
             command.addAll(params);
-
 
             ProcessBuilder builder = new ProcessBuilder(command);
             Map<String, String> environ = builder.environment();
@@ -123,5 +109,4 @@ public class Trace{
                 assert p.getInputStream().read() == -1;
             */
         }
-    
 };

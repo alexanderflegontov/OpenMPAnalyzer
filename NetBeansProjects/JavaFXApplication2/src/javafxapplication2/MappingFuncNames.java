@@ -6,7 +6,9 @@
 package javafxapplication2;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javafx.scene.paint.Color;
 
 /**
@@ -89,7 +91,112 @@ public final class MappingFuncNames{
         }
         
        
-        
+/// It is mapping names and output strings
+public static final String[]  LOG_OPER = {
+    "Parallel_End",  // GOMP_parallel_end
+    "Parallel_Start",  // GOMP_parallel
+
+    "Atomic_Start",  // GOMP_atomic_start
+    "Atomic_End",  // GOMP_atomic_end
+    "Barrier",  // GOMP_barrier
+    "Critic_Start",  // GOMP_critical_start
+    "Critic_End",  // GOMP_critical_end
+
+    "Loop_order_Start",  // GOMP_loop_ordered_static_start
+    "Loop_order_Next",  // GOMP_loop_ordered_static_next
+    "Loop_End",  // GOMP_loop_end
+    "Ordered_Start",  // GOMP_ordered_start
+    "Ordered_End",  // GOMP_ordered_end
+
+    "Par_sections_Start",  // GOMP_parallel_sections
+    "Sections_Next",  // GOMP_sections_next
+    "Sections_nowait_End",  // GOMP_sections_end_nowait
+
+    "Get_wtime",  // omp_get_wtime
+    "Init_lock",  // omp_init_lock
+    "lock_Start",  // omp_set_lock
+    "lock_End",  // omp_unset_lock
+
+    "Single_Start", // GOMP_single_start    "Single_Start_Be    ",
+    "Single_End", // GOMP_single_start    "Single_Start_Af    ",
+    "Main_Start", // MAIN
+    "Main_End", // MAIN
+    "PayloadFunc_Start", // _OMP_FN
+    "PayloadFunc_End", // _OMP_FN
+
+    "Thread_Start",
+    "Thread_End",
+};
+
+    public static final Set<Integer> SET_FUNC_START = new HashSet<>();
+    public static final Set<Integer> SET_FUNC_END = new HashSet<>();
+    public static final Map<Integer,Integer> FUNC_TO_FUNC = new HashMap<>();
+    public static final Map<String,Integer> FUNC_NAME_TO_FUNC_ID = new HashMap<>();
+
+    public static final Map<Integer,Integer> PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID = new HashMap<>();
+    static {
+        for(int index = 0; index < LOG_OPER.length; ++index) {
+            final String curLogOper = LOG_OPER[index];
+            if(curLogOper.contains(START)) {
+                SET_FUNC_START.add(index);
+            }else if(curLogOper.contains(END)) {
+                SET_FUNC_END.add(index);
+            }
+            String[] ArrayStr = curLogOper.split("_");
+            int ind2 = 0;
+            for(; ind2 < LOG_OPER.length; ++ind2) {
+                if(!(LOG_OPER[ind2].equals(curLogOper)) &&
+                    LOG_OPER[ind2].contains(ArrayStr[0])) {
+                    FUNC_TO_FUNC.put(index, ind2);
+
+                    ////START//// PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID
+                    final String funcName = curLogOper.split("_")[0];
+                    int internal_index = 0;
+                    for(; internal_index < FUNC_NAME.length; ++internal_index) {
+                        if(funcName.equals(FUNC_NAME[internal_index])) {
+                            PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID.put(index, internal_index);
+                            break;
+                        }
+                    }
+                    if(internal_index == FUNC_NAME.length) {
+                        // not found in FUNC_NAME
+                        //PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID.put(index, internal_index);
+                        // Usage in Parsing only when it is pair!
+                    }
+                    ////END//// PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID
+                    break;
+                }
+            }
+            if(ind2 == LOG_OPER.length) {
+                // pair not found
+                FUNC_TO_FUNC.put(index, index);
+            }
+
+            FUNC_NAME_TO_FUNC_ID.put(curLogOper, index);
+        }
+
+
+        System.out.println("SET_FUNC_START = ");
+        SET_FUNC_START.forEach((elem) -> {
+                System.out.println(elem + " => " + LOG_OPER[elem]);
+                });
+
+        System.out.println("SET_FUNC_END = ");
+        SET_FUNC_END.forEach((elem) -> {
+                System.out.println(elem + " => " + LOG_OPER[elem]);
+                });
+
+        System.out.println("FUNC_TO_FUNC = ");
+        for(int index = 0; index < LOG_OPER.length; ++index){
+            System.out.println(index + " => " + FUNC_TO_FUNC.get(index));
+        }
+    }
+
+    // O(1)
+    public static final boolean IsSameFunction(final Integer funcId1, final Integer funcId2){
+        return FUNC_TO_FUNC.get(funcId1).equals(funcId2);
+    }
+
         /*
         static final int GetIndex(String funcName){
             if(FUNC_NAME.length !=  FUNC_RECT_COLOR.length){

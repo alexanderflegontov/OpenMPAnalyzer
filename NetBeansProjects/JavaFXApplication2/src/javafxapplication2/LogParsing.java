@@ -13,7 +13,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
 import javafx.scene.paint.Color;
-import javafxapplication2.AnalyzeData.Mark;
+import javafxapplication2.DataAnalyzer.Mark;
 import static javafxapplication2.SettingWindow.H_STAT_RECT;
 import static javafxapplication2.SettingWindow.W;
 import javafxapplication2.StatisticWindow.TimestampLine;
@@ -36,7 +36,7 @@ public class LogParsing {
     }
             
     //List<Mark> getListMarks = (List<Mark>) TableStatThreads.get(ArrThreadId.get(thID));
-    void Parsing(List<Mark> getListMarks, int thID){
+    void ParsingHuman(List<Mark> getListMarks, int thID){
         //LinkedList<Mark>
 
         int parallax = 0;
@@ -113,9 +113,90 @@ public class LogParsing {
         //return hashTableThreadStat;
     }
 
+    //List<Mark> getListMarks = (List<Mark>) TableStatThreads.get(ArrThreadId.get(thID));
+    void Parsing(List<Mark> getListMarks, int thID){
+        //LinkedList<Mark>
 
+        int parallax = 0;
+        int numBetweenSections = 0;
+        //List<Mark> betweenSectionList = new ArrayList<>();
+            
+            for(ListIterator<Mark> elemIter = getListMarks.listIterator(); elemIter.hasNext(); ){
+                boolean bFound = false;
+                
+                Mark elemEnd = elemIter.next();
+                if(MappingFuncNames.SET_FUNC_START.contains(elemEnd.funcId)){
+                //if(elemEnd.funcName.contains(MappingFuncNames.START)){
+                    ++parallax;
+                }else{
+                    if(MappingFuncNames.SET_FUNC_END.contains(elemEnd.funcId)){
+                    //if(elemEnd.funcName.contains(MappingFuncNames.END)){
+                        elemIter.remove(); // remove the end element
+                        //String[] ArrayStr = elemEnd.funcName.split("_");
+                        
+                        numBetweenSections = 0;
+                        //betweenSectionList.clear();
+                        while(elemIter.hasPrevious()){
+                            //System.out.println("......    elemEndIter.nextIndex() = "+ elemEndIter.nextIndex());
+                            Mark elemStart = elemIter.previous();                           
+                            //System.out.println("......    elemStartIter.nextIndex() = "+ elemStartIter.nextIndex());
+                            if(MappingFuncNames.IsSameFunction(elemStart.funcId, elemEnd.funcId)
+                                    && MappingFuncNames.SET_FUNC_START.contains(elemStart.funcId)){
+                            //if(elemStart.funcName.contains(ArrayStr[0]) && elemStart.funcName.contains(MappingFuncNames.START)){
+                                bFound = true;
+                                --parallax;
+                                List<Section> getLstParallax = (List<Section>) sectionHierarchicalTable.get(parallax);
 
-    public static Section CreateStartEndSection(Mark mrk1,Mark mrk2, int thID, final int funcNameId, final int parallax){
+                                if(getLstParallax == null){
+                                    getLstParallax = new ArrayList<>();
+                                    sectionHierarchicalTable.put(parallax, getLstParallax);
+                                }
+                                //final int funcNameInd = elemEnd.funcId;
+                                //final int funcNameInd = MappingFuncNames.GetIndex(ArrayStr[0]);
+                                //final int funcNameInd = MappingFuncNames.GetIndex(elemEnd.funcName.split("_")[0]);
+                                final int funcNameInd = MappingFuncNames.PAIR_FUNC_ID_TO_INTERNAL_MAP_FUNC_ID.get(elemEnd.funcId);
+                                Section rect = CreateStartEndSection(elemStart, elemEnd, thID, funcNameInd, parallax);
+                                
+                                getLstParallax.add(rect);
+                                elemIter.remove(); // remove the start element
+                                
+                                //if(numBetweenSections != 0){
+                                //List<Mark> lstTmp = sectionHierarchicalTable.get(parallax +1);
+                                for(; numBetweenSections > 0; --numBetweenSections){
+                                    Mark elem1 =  elemIter.next();
+                                    Section rectBarrier = CreateAloneSection(elem1, thID, parallax);
+                                    if(rectBarrier != null){
+                                        
+                                        getLstParallax.add(rectBarrier);                                        
+                                    }
+                                    elemIter.remove(); // remove the current element(elem1)
+
+                                }
+                                    //getLstParallax.addAll(betweenSectionList);
+                                //}
+                                
+                                //elemIter.remove(); // remove the end element
+                                
+                                break;
+                            }
+                            ++numBetweenSections;
+                            //betweenSectionList.add(elemStart);
+                        }
+                        //System.out.println("END    elemEndIter.nextIndex() = "+ elemEndIter.nextIndex());
+                        
+                        if(!bFound){
+                            System.out.println("Elem end "+"is not found ElemStart ! ");
+                            //betweenSectionList.clear();
+                        }
+                        
+                    }                 
+                }
+
+            }
+        //return hashTableThreadStat;
+    }
+
+public static Section CreateStartEndSection(Mark mrk1,Mark mrk2, int thID, final int funcNameId, final int parallax){
 
         if(TimestampLine.TimeLineEnd < mrk2.time){
             System.out.println("!!!!!!!!!! INVALID SECTION for thID = "+thID+" continue!!!!!!!!!!!!!!!!!!!!!");
