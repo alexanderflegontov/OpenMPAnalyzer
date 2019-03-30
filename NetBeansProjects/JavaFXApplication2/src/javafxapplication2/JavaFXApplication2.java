@@ -34,10 +34,9 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 
 /**
- *
+ * @brief The main class to run "OpenMP App Analyzer" tool
  * @author HP
  */
-
 public class JavaFXApplication2 extends Application  {
     private static final String STR_PROGRAM_TITLE = "OpenMP App Analyzer";
     private static final int W = 870;
@@ -61,12 +60,12 @@ public class JavaFXApplication2 extends Application  {
     private static final int VBOX_SPASING = 20;
     private static final Insets VBOX_INSERTS = new Insets(10,0,0,0);
 
-    TextField selectedAppTextField;
-    TextField appParamTextField;
-    Legend legenda;
-    InfoBoard infoBoard;
-    StatisticWindow StatWindow;
-    StatTable statTable;
+    private TextField selectedAppTextField;
+    private TextField appParamTextField;
+    private Legend legenda;
+    private MetricBoard metricBoard;
+    private StatisticWindow mainStatWindow;
+    private StatTableView statTable;
 
     private static final String BACKGROUND_STYLE = "-fx-background-color: rgb(110, 2, 110);"
                                 + "-fx-border-color: rgb(0,0,0);"
@@ -76,14 +75,11 @@ public class JavaFXApplication2 extends Application  {
                                 + "-fx-border-color: rgb(0,0,0);"
                                 + "-fx-border-width: 1;";
 
-
-
-
     @Override
-    public void start(Stage primaryStage) {
-
+    public void start(Stage primaryStage){
         Group root = new Group();
-        Scene scene = new Scene(root, W, H-12); // (-12)->0
+        root.setStyle(BACKGROUND_STYLE);
+        Scene scene = new Scene(root, W, H-12); // (-12) -> 0
         primaryStage.setTitle(STR_PROGRAM_TITLE);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -91,84 +87,31 @@ public class JavaFXApplication2 extends Application  {
         //primaryStage.setMinWidth(W);
         primaryStage.setResizable(false);
 
-        root.setStyle(BACKGROUND_STYLE);
+        VBox mainVerticalBox = CreateMainBox(scene, primaryStage);
 
-        HBox hbAppChoice = ShowAppChoice((int) scene.getWidth(), primaryStage);
-        HBox hbAppArgs = ShowAppArgs((int) scene.getWidth(), primaryStage);
-        
-        legenda = new Legend(null);
-                
-        infoBoard = new InfoBoard(null);
-
-        statTable = new StatTable(W);
-                
-        ScrollPane infoBoardScroller = new ScrollPane();
-        //infoBoardScroller.setMinViewportHeight(300);      
-        infoBoardScroller.setVbarPolicy(ScrollBarPolicy.NEVER);
-        infoBoardScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        //infoBoardScroller.setMinSize(StatWindow.rectCanvas.getWidth(), StatWindow.rectCanvas.getHeight());
-        infoBoardScroller.setMinSize((int) scene.getWidth(),InfoBoard.H);
-        infoBoardScroller.setMaxSize((int) scene.getWidth(),InfoBoard.H);
-        infoBoardScroller.setContent(infoBoard);
-        infoBoardScroller.setStyle(INFO_BOARD_SCROLLER_STYLE);
-        
-        
-        StatWindow = new StatisticWindow(scene, infoBoard, legenda, statTable);
-        //StatWindow.setMinSize((int) scene.getWidth(), SettingWindow.H);
-        //StatWindow.setMaxSize((int) scene.getWidth(), SettingWindow.H);
-
-        /*
-        ZoomButtonsGroup zoomButtonsGroup = new ZoomButtonsGroup();
-        zoomButtonsGroup.setLayoutX(StatWindow.rectCanvas.getWidth() - zoomButtonsGroup.ZOOM_BUTTON_ORIGIN_X/4 - zoomButtonsGroup.ZOOM_BUTTON_WIDTH);
-        zoomButtonsGroup.setLayoutY(StatWindowScroller.getLayoutY()+ zoomButtonsGroup.ZOOM_BUTTON_ORIGIN_Y);
-        root.getChildren().add(zoomButtonsGroup);
-        zoomButtonsGroup.SetScalableGroup(StatWindow.rootGroup, StatWindow.rectCanvas);
-        */        
-        
-        VBox vbInputPanel = new VBox();
-        vbInputPanel.setSpacing(INPUT_PANEL_VBOX_SPASING);
-        //vbInputPanel.setMaxWidth(SettingWindow.WIDTH);
-        vbInputPanel.getChildren().addAll(hbAppChoice, hbAppArgs);
-        
-        VBox vbOutputPanel = new VBox();
-        //vbOutputPanel.setMaxWidth(SettingWindow.WIDTH);        
-        vbOutputPanel.getChildren().addAll(legenda, infoBoardScroller, StatWindow, statTable);
-
-        VBox vb = new VBox();
-        vb.setSpacing(VBOX_SPASING);
-        vb.setPadding(VBOX_INSERTS);
-        vb.setMaxWidth(SettingWindow.WIDTH);
-        vb.getChildren().addAll(vbInputPanel, vbOutputPanel);
-        
-        root.setOnDragOver(StatWindow.eventDragOverHandler);
-        root.setOnDragDropped(StatWindow.eventDragDroppedHandler);
-        
-        root.getChildren().add(vb);
+        root.setOnDragOver(mainStatWindow.eventDragOverHandler);
+        root.setOnDragDropped(mainStatWindow.eventDragDroppedHandler);
+        root.getChildren().add(mainVerticalBox);
     }
 
-    private void Button1ActionPerformed(Stage primaryStage) {                                         
+    private void Button1ActionPerformed(Stage primaryStage) {
         System.out.println("Button1 is pressed");
-    
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Resource File");
-        /*fileChooser.getExtensionFilters().addAll(
-             new ExtensionFilter("Text Files", "*.txt"),
-             new ExtensionFilter("Image Files", "*.png", "*.jpg", "*.gif"),
-             new ExtensionFilter("Audio Files", "*.wav", "*.mp3", "*.aac"),
-             new ExtensionFilter("All Files", "*.*"));*/
         File selectedFile = fileChooser.showOpenDialog(primaryStage);
         if (selectedFile != null) {
-            String strPath = selectedFile.getAbsolutePath();
+            final String strPath = selectedFile.getAbsolutePath();
             selectedAppTextField.setText(strPath);
-            System.out.println("We have selected that app:" + strPath);
+            System.out.println("You have selected this app:" + strPath);
         } else {
             System.out.println("Open command cancelled by user.");
         }
-    }    
+    }
     
-    private void Button2ActionPerformed(Stage primaryStage) {                                         
+    private void Button2ActionPerformed(Stage primaryStage) {
         System.out.println("Button2 is pressed");
- 
+
         final String strAppPath = selectedAppTextField.getText();
         final File file = new File(strAppPath);
         if(file == null) {
@@ -184,7 +127,7 @@ public class JavaFXApplication2 extends Application  {
         String strAppArgs = "";
         if(!appParamTextField.getText().isEmpty()) {
             strAppArgs = appParamTextField.getText();
-            System.out.println(" strAppArgs: " + strAppArgs);
+            System.out.println("Arguments of your program: " + strAppArgs);
         }
 
         DataAnalyzer.RemovePreviousResultFiles("");
@@ -210,13 +153,54 @@ public class JavaFXApplication2 extends Application  {
         
         System.out.println("=================StartCreateBarChart=========");
         primaryStage.setTitle("Start building diagrams");
-        StatWindow.Show(TableStatisticaThreads);
-        //infoBoard.ShowStatForAllThread();
+        mainStatWindow.Show(TableStatisticaThreads);
         primaryStage.setTitle("The end building diagrams");
-    }                                     
+    }
 
-    private HBox ShowAppChoice(int sceneWidth, Stage stageForButtonAction){
+    private VBox CreateMainBox(Scene scene, Stage primaryStage){
+        // All the visual components of the Java application are created here.
+        HBox hbAppChoice = CreateAppChoiceBox((int) scene.getWidth(), primaryStage);
+        HBox hbAppArgs = CreateAppArgsBox((int) scene.getWidth(), primaryStage);
 
+        legenda = new Legend();
+   
+        metricBoard = new MetricBoard(null);
+
+        statTable = new StatTableView(W);
+     
+        ScrollPane metricBoardScroller = new ScrollPane();
+        //metricBoardScroller.setMinViewportHeight(300);      
+        metricBoardScroller.setVbarPolicy(ScrollBarPolicy.NEVER);
+        metricBoardScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        //metricBoardScroller.setMinSize(mainStatWindow.rectCanvas.getWidth(), mainStatWindow.rectCanvas.getHeight());
+        metricBoardScroller.setMinSize((int) scene.getWidth(),MetricBoard.H);
+        metricBoardScroller.setMaxSize((int) scene.getWidth(),MetricBoard.H);
+        metricBoardScroller.setContent(metricBoard);
+        metricBoardScroller.setStyle(INFO_BOARD_SCROLLER_STYLE);
+
+        mainStatWindow = new StatisticWindow(scene, legenda, metricBoard, statTable);
+        //mainStatWindow.setMinSize((int) scene.getWidth(), SettingWindow.H);
+        //mainStatWindow.setMaxSize((int) scene.getWidth(), SettingWindow.H);
+
+        // Add all visual components to VBoxes
+        VBox vbInputPanel = new VBox();
+        vbInputPanel.setSpacing(INPUT_PANEL_VBOX_SPASING);
+        //vbInputPanel.setMaxWidth(SettingWindow.WIDTH);
+        vbInputPanel.getChildren().addAll(hbAppChoice, hbAppArgs);
+
+        VBox vbOutputPanel = new VBox();
+        //vbOutputPanel.setMaxWidth(SettingWindow.WIDTH);        
+        vbOutputPanel.getChildren().addAll(legenda, metricBoardScroller, mainStatWindow, statTable);
+
+        VBox mainVerticalBox = new VBox();
+        mainVerticalBox.setSpacing(VBOX_SPASING);
+        mainVerticalBox.setPadding(VBOX_INSERTS);
+        mainVerticalBox.setMaxWidth(SettingWindow.WIDTH);
+        mainVerticalBox.getChildren().addAll(vbInputPanel, vbOutputPanel);
+        return mainVerticalBox;
+    }
+    
+    private HBox CreateAppChoiceBox(int sceneWidth, Stage stageForButtonAction){
         Button browserButton = new Button();
         browserButton.setText("Browse");
         browserButton.setFont(BUTTON_FONT);
@@ -234,19 +218,12 @@ public class JavaFXApplication2 extends Application  {
         Label textFieldLabel = new Label("Choose OpenMP app for analyze:");
         textFieldLabel.setFont(LABEL_FONT);
         textFieldLabel.setTextFill(STRING_COLOR);
-        
+
         selectedAppTextField = new TextField();
         selectedAppTextField.setFont(TEXT_FIELD_FONT);
         selectedAppTextField.setStyle(STYLE_TEXT_FIELD);
-
-        HBox hb = new HBox();
-        hb.setSpacing(INPUT_PANEL_HBOX_SPASING);
-        HBox.setHgrow(selectedAppTextField, Priority.ALWAYS);
-        hb.setMaxWidth(sceneWidth);
-        hb.setAlignment(Pos.CENTER);
-        hb.setPadding(INPUT_PANEL_HBOX_INSERTS);
-
         selectedAppTextField.setOnDragOver(new EventHandler<DragEvent>(){
+             @Override
              public void handle(DragEvent event){
                 Dragboard db = event.getDragboard();
                 if(db.hasString() || db.hasFiles()){
@@ -255,8 +232,8 @@ public class JavaFXApplication2 extends Application  {
                 }
              }
          });
-
         selectedAppTextField.setOnDragDropped(new EventHandler<DragEvent>(){
+             @Override
              public void handle(DragEvent event){
                 Dragboard db = event.getDragboard();
                 if(db.hasString()){
@@ -270,12 +247,18 @@ public class JavaFXApplication2 extends Application  {
                 event.consume();
              }
          });
-        
+
+        HBox hb = new HBox();
+        hb.setSpacing(INPUT_PANEL_HBOX_SPASING);
+        HBox.setHgrow(selectedAppTextField, Priority.ALWAYS);
+        hb.setMaxWidth(sceneWidth);
+        hb.setAlignment(Pos.CENTER);
+        hb.setPadding(INPUT_PANEL_HBOX_INSERTS);
         hb.getChildren().addAll(textFieldLabel, selectedAppTextField, browserButton);
         return hb;
     }
-    
-    private HBox ShowAppArgs(int sceneWidth, Stage stageForButtonAction){
+
+    private HBox CreateAppArgsBox(int sceneWidth, Stage stageForButtonAction){
         Button startButton = new Button();
         startButton.setText("Start analyze");
         startButton.setFont(BUTTON_FONT);
@@ -285,36 +268,31 @@ public class JavaFXApplication2 extends Application  {
             @Override
             public void handle(ActionEvent event) {
                 System.out.println("Start Button is pressed");
-                //label.setText("Accepted");
                 //event.consume();
                 Button2ActionPerformed(stageForButtonAction);
                 stageForButtonAction.show();
-
             }
         };
-
         startButton.setOnAction(startButtonHandler);
-    
+
         Label textFieldLabel = new Label("args: ");
         textFieldLabel.setFont(LABEL_FONT);
         textFieldLabel.setTextFill(STRING_COLOR);
-        
+
         appParamTextField = new TextField();
         appParamTextField.setFont(TEXT_FIELD_FONT);
         appParamTextField.setStyle(STYLE_TEXT_FIELD);
-                
+
         HBox hb = new HBox();
         hb.setSpacing(INPUT_PANEL_HBOX_SPASING);
         HBox.setHgrow(appParamTextField, Priority.ALWAYS);
         hb.setMaxWidth(sceneWidth);
         hb.setAlignment(Pos.CENTER);
         hb.setPadding(INPUT_PANEL_HBOX_INSERTS);
-        
         hb.getChildren().addAll(textFieldLabel, appParamTextField, startButton);
         return hb;
     }
 
-    
     /**
      * @param args the command line arguments
      */

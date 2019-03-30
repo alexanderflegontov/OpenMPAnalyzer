@@ -13,20 +13,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.security.InvalidParameterException;
+
 import static javafxapplication2.MappingFuncNames.FUNC_NAME_TO_FUNC_ID;
 
 /**
- *
- * @author HP
+ * @brief The class to process .out text file
+ * @author hp
  */
-
-// The class for processing .out text file
 public class DataAnalyzer{
     private List<PinToolMark> listTHMarks;
 
@@ -76,16 +77,11 @@ public class DataAnalyzer{
     }
 
     public static boolean IsConfigFile(final String strPinToolOutfile){
-        //File fileOutForAnalysis = new File(strPinToolOutfile);
-        //if(fileOutForAnalysis != null && fileOutForAnalysis.isFile() && fileOutForAnalysis.canRead()){
-        //if(STR_PINTOOL_OUT_CONF == fileOutForAnalysis.getName()){
-        //    return true;
-        //}
         return DEFAULT_PINTOOL_OUT_CONF.equals(strPinToolOutfile);
     }
 
     public Map Start(final String strPinToolOutfile){
-        System.out.println("============= AnalyzeData::Start() - try confing file proccessing ========");
+        System.out.println("============= AnalyzeData::Start() - try config file proccessing ========");
         Map threadStatisticsTable = StartConfingFileProcessing(strPinToolOutfile);
         
         //TreeMap<Integer, List<Mark>> sorted_map = new TreeMap<Integer, List<Mark>>();
@@ -97,18 +93,13 @@ public class DataAnalyzer{
         {
             System.out.println("Thread("+ArrThreadId.get(i)+") is a " + String.valueOf(i));
         }
-        /*
-        if(threadStatisticsTable == null){
-            System.out.println("============= AnalyzeData::Start() - config proccessing fails, try one file proccessing ========");
-            threadStatisticsTable = StartOneFileProccessing(strPinToolOutfile);
-        }*/
         return threadStatisticsTable;
     } 
 
     public static Map StartConfingFileProcessing(final String strPinToolOutfile) {
         ArrayList<String> namesOutConfFiles = ReadConfigFile(strPinToolOutfile);
         if(namesOutConfFiles == null){
-            return null;
+            throw new InvalidParameterException("config file = " + strPinToolOutfile);
         }
         System.out.println("The config file is found and is valid");
 
@@ -122,7 +113,7 @@ public class DataAnalyzer{
                 retThreadMarksTable.putAll(hashTable);
             }else{
                 // fail
-                return null;
+                throw new InvalidParameterException("threadOutFileName = " + threadOutFileName);
             }
         }
         return retThreadMarksTable;
@@ -277,16 +268,18 @@ public class DataAnalyzer{
         return retThreadMarksTable;
     }
 
-    // The class for proccessing one text line in PinToolMark 
+    /**
+     * @brief The class to process one text line in PinToolMark
+     */
     public class PinToolMark extends Object{
 
-    // Abbreviations and auxiliary things: 
+        // Abbreviations and auxiliary things: 
         public static final String STR_THREAD    = "TH";
         public static final String STR_OPERATION = "OP";
         public static final String STR_TIME      = "TM";
         public static final String STR_ITER      = "IT";
         public static final String STR_DELIMITER = "= ";
-    // Structure of entry:
+        // Structure of entry:
         public Integer threadId;
         public String funcName;
         public Integer funcId;
@@ -322,7 +315,7 @@ public class DataAnalyzer{
                         break;
                     case STR_OPERATION:
                         this.funcName = val;
-                        this.funcId = (Integer)FUNC_NAME_TO_FUNC_ID.get(this.funcName);
+                        this.funcId = FUNC_NAME_TO_FUNC_ID.get(this.funcName);
                         break;
                     case STR_TIME:
                         this.time = Double.parseDouble(val);
@@ -359,22 +352,18 @@ public class DataAnalyzer{
     };
     
     public class Mark{
-        public String funcName;
         public Integer funcId;
         public double time;
 
         public Mark(PinToolMark mark){
-            funcName = mark.funcName;
             funcId = mark.funcId;
             time = mark.time;
         }
-/*
-        public Mark(String str, double T){
-            funcName = str;
-            funcId = (Integer)FUNC_NAME_TO_FUNC_ID.get(funcName);
+
+        public Mark(String funcName, double T){
+            funcId = FUNC_NAME_TO_FUNC_ID.get(funcName);
             time = T;
         }
-*/
     };
     
     public Map StartProccessingOfThreadTraceFile(final String outputTH_filePath){
@@ -401,7 +390,7 @@ public class DataAnalyzer{
             
             BufferedReader reader = null;
             try {
-                retThreadMarksTable = new TreeMap<Integer, List<Mark>>(); 
+                retThreadMarksTable = new TreeMap<Integer, LinkedList<Mark>>(); 
                 reader = new BufferedReader(new FileReader(outputTHFile));
                 
                 listTHMarks.clear(); // clear previous data of analysis
@@ -415,11 +404,11 @@ public class DataAnalyzer{
                         }
                         
                         Mark mrk = new Mark(mark);
-                        List<Mark> getListMarks = (List<Mark>) retThreadMarksTable.get(tid);
+                        List<Mark> getListMarks = (LinkedList<Mark>) retThreadMarksTable.get(tid);
                         if(getListMarks != null){
                             getListMarks.add(mrk);
                         }else{
-                            getListMarks = new ArrayList<>();
+                            getListMarks = new LinkedList<>();
                             getListMarks.add(mrk);
                             retThreadMarksTable.put(tid, getListMarks);
                         }
@@ -442,7 +431,4 @@ public class DataAnalyzer{
         }
         return retThreadMarksTable;
     }
-    
-    
 };
-

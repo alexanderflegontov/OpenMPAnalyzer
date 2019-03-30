@@ -19,57 +19,49 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
 /**
- *
- * @author HP
+ * @brief The class is a representation of all parallel sections in traced program.
+ * @author hp
  */
-public class StatTable extends VBox{
+public class StatTableView extends VBox{
+
     private static final String HEADER_STYLE= "-fx-background-color: rgb(189,150,255);"
                             + "-fx-border-color: rgb(0,0,0);"
                             + "-fx-border-width: 0;"
                             + "-fx-padding: 0,0,0,0;"
                             + "-fx-background-insets: 0;";
-                            
+
     private static final String STAT_TABLE_STYLE= "-fx-background-color: rgb(245,246,247);"
                             + "-fx-border-color: rgb(255,255,255);"
                             + "-fx-border-width: 0;"
                             + "-fx-padding: 0;"
                             + "-fx-background-insets: 0;";
-    
+
     private static final String[] HEADER_STRINGS = {"section№", "start time", "end time", "delta", "TID","Payload start", "Payload end", "delta", "rate(%)"};
     private static final int[] HEADER_PERCENT = {9, 14, 14, 10 ,6, 14, 14, 10, 10};
-    private static final String strDoubleFormat = "%."+String.valueOf(3)+"f";             
+    private static final String strDoubleFormat = "%."+String.valueOf(3)+"f";
 
-            
     //public static final int W = 320;
     public static final int H = 167;
     
     private StatTableData statTableData;
-    private ArrayList rParallelSections; // reference
+    private ArrayList refParallelSections;
     private GridPane header;
     private int unit = 1;
     static private ScrollPane StatTableScroller;
     static private VBox grScroll;
 
-    ColumnConstraints col0;
-    ColumnConstraints col1;
-    ColumnConstraints col2;
-    ColumnConstraints col3;
-    ColumnConstraints col4;
-    ColumnConstraints col5;
-    ColumnConstraints col6;
-    ColumnConstraints col7;
-    ColumnConstraints col8;
-    ColumnConstraints colsIndent;    
+    ColumnConstraints[] colsSetup;
+    ColumnConstraints colsIndentSetup;
     
     public StatTableData GetStatTableData(){
         return statTableData;
     }
     
-    StatTable(double sceneWidth){
+    StatTableView(double sceneWidth){
         super();
 
         statTableData = new StatTableData();
-        rParallelSections = statTableData.GetRefParallelSections();
+        refParallelSections = statTableData.GetRefParallelSections();
 
         grScroll = new VBox();
         //grScroll.setMaxSize( (int)sceneWidth+1, (H));
@@ -87,82 +79,46 @@ public class StatTable extends VBox{
         StatTableScroller.setBorder(Border.EMPTY);
         StatTableScroller.setStyle(STAT_TABLE_STYLE);
 
-        col0 = new ColumnConstraints();
-        col1 = new ColumnConstraints();
-        col2 = new ColumnConstraints();
-        col3 = new ColumnConstraints();
-        col4 = new ColumnConstraints();
-        col5 = new ColumnConstraints();
-        col6 = new ColumnConstraints();
-        col7 = new ColumnConstraints();
-        col8 = new ColumnConstraints();
-        colsIndent = new ColumnConstraints();
-
-        col0.setPercentWidth(HEADER_PERCENT[0]);
-        col0.setHalignment(HPos.CENTER);
+        colsSetup = new ColumnConstraints[HEADER_STRINGS.length];
+        for(int i = 0; i < HEADER_STRINGS.length; ++i){
+            colsSetup[i] = new ColumnConstraints();
+            colsSetup[i].setPercentWidth(HEADER_PERCENT[i]);
+            colsSetup[i].setHalignment(HPos.CENTER);
+        }
         
-        col1.setPercentWidth(HEADER_PERCENT[1]);
-        col1.setHalignment(HPos.CENTER);
-        
-        col2.setPercentWidth(HEADER_PERCENT[2]);
-        col2.setHalignment(HPos.CENTER);
-        
-        col3.setPercentWidth(HEADER_PERCENT[3]);
-        col3.setHalignment(HPos.CENTER);
-        
-        col4.setPercentWidth(HEADER_PERCENT[4]);
-        col4.setHalignment(HPos.CENTER);        
-        
-        col5.setPercentWidth(HEADER_PERCENT[5]);
-        col5.setHalignment(HPos.CENTER);
-        
-        col6.setPercentWidth(HEADER_PERCENT[6]);
-        col6.setHalignment(HPos.CENTER);
-        col7.setPercentWidth(HEADER_PERCENT[7]);
-        col7.setHalignment(HPos.CENTER);
-
-        col8.setPercentWidth(HEADER_PERCENT[8]);
-        col8.setHalignment(HPos.CENTER);
-        
-        colsIndent.setPercentWidth(col0.getPercentWidth()+col1.getPercentWidth()
-                +col2.getPercentWidth()+col3.getPercentWidth());//40.0);
-        colsIndent.setHalignment(HPos.CENTER);
+        colsIndentSetup = new ColumnConstraints();
+        colsIndentSetup.setPercentWidth(colsSetup[0].getPercentWidth() +
+                                   colsSetup[1].getPercentWidth() +
+                                   colsSetup[2].getPercentWidth() +
+                                   colsSetup[3].getPercentWidth());
+        colsIndentSetup.setHalignment(HPos.CENTER);
 
         ShowStatTable();
     }
     
-    /*
-    public void SetParallelSections(StatTableData parallelSectionsData){
-        ParallelSections = statTableData.GetParallelSections();
-    }*/ 
-    
     public void ShowStatTable(){
         this.getChildren().clear();
-        grScroll.getChildren().clear();        
-        //header.getChildren().clear();
-        
+        grScroll.getChildren().clear();
+
         CreateHeader();
         this.getChildren().add(StatTableScroller);
 
-        //System.out.println("ParallelSections = "+ rParallelSections);
-        if(rParallelSections != null){
+        if(refParallelSections != null){
             CreateBody();
         }
     }
 
     public void UpdateUnit(double timeWidth){
-        unit = Legend.GetUnit(timeWidth); //(statTableElem.GetParallelDelta());
+        unit = Timeline.GetUnit(timeWidth);
     }
     
     private void CreateHeader(){
         header = new GridPane();
         header.setStyle(HEADER_STYLE);
         header.setBorder(Border.EMPTY);
-        header.getColumnConstraints().addAll(col0, col1, col2, col3, 
-                col4, col5, col6, col7, col8);
-        //header.getChildren().clear();
-        String strUnit = ","+Legend.UNIT[unit];
-        
+        header.getColumnConstraints().addAll(colsSetup[0], colsSetup[1], colsSetup[2], colsSetup[3], colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
+
+        final String strUnit = "," + Timeline.UNIT[unit];
         header.add(new Label(HEADER_STRINGS[0]), 0, 0);
         header.add(new Label(HEADER_STRINGS[1]+strUnit), 1, 0);
         header.add(new Label(HEADER_STRINGS[2]+strUnit), 2, 0);
@@ -177,18 +133,14 @@ public class StatTable extends VBox{
         this.getChildren().add(header);
     }
     
-    
-    
     private boolean CreateBody(){
-        System.out.println("CreateBody: rParallelSections.size() = " + rParallelSections.size());
-        for(int i=0; i < rParallelSections.size(); ++i){
-            
-            StatTableData.TableRowData statRow = (StatTableData.TableRowData)(rParallelSections.get(i));
+        for(int i = 0; i < refParallelSections.size(); ++i){
+            TableRowData statRow = (TableRowData)(refParallelSections.get(i));
             if(!statRow.IsValid()){
-                System.out.println("CreateBody: table for parallel section #" + String.valueOf(i) + "IsInvalid !!! ");
+                System.out.println("CreateBody: table for parallel section #" + String.valueOf(i) + "is invalid!");
                 return false;
             }
-            System.out.println("CreateBody: i = " + String.valueOf(i) + " " 
+            System.out.println("CreateBody: i = " + String.valueOf(i) + " "
                     + statRow.GetStartParallel() + String.valueOf(statRow.GetEndParallel()) + " "
                     + String.valueOf(statRow.GetParallelDelta() + String.valueOf(0)) + " "
                     + String.valueOf(statRow.GetStartPayload(0)) + String.valueOf(statRow.GetEndPayload(0)) + " "
@@ -196,7 +148,7 @@ public class StatTable extends VBox{
                     );
             
             ParSectionElem parSectionElem = new ParSectionElem(i, statRow);
-            grScroll.getChildren().add(parSectionElem); // this, grScroll
+            grScroll.getChildren().add(parSectionElem);
         }
         return true;
     }
@@ -206,19 +158,22 @@ public class StatTable extends VBox{
         if(parSectionElem == null){
             return;
         }
-        parSectionElem.SetAllVisible(true);//!parSectionElem.IsAllVisible());//true);
+        parSectionElem.SetAllVisible(true);
+        // Alignment
         double Y = parSectionElem.getLocalToParentTransform().getTy();
         double lastY = grScroll.getBoundsInParent().getHeight();
-        //double valueY = Y/lastY;
         double windowDeltaView = StatTableScroller.getHeight();
         double valueY = Y/(lastY-windowDeltaView);
-        
         System.out.println("[ShowParSection]: valueY = "+valueY);
         StatTableScroller.setVvalue(valueY);
-    } 
-    
-    
-    public class ParSectionElem extends VBox{
+    }
+
+
+    /**
+     * @brief The class is a representation of one parallel section in statistic table.
+     * @author hp
+     */
+    public final class ParSectionElem extends VBox{
 
         private static final String SECTION_HEADER_STYLE= "-fx-background-color: rgb(205,205,205);"
                                 + "-fx-border-color: rgb(0,0,0);"
@@ -233,28 +188,28 @@ public class StatTable extends VBox{
                                 + "-fx-background-insets: 0;";
         
         ArrayList<GridPane> lstRows;
-        
+        boolean m_isAllVisible;
+
         private static final int SHOW_PRECISION = 1;
             
         private String TimeToString(double time){
-            return Legend.GetFormatTimeOnly(time, unit, SHOW_PRECISION);
+            return Timeline.GetFormatTimeOnly(time, unit, SHOW_PRECISION);
         }
         
         private String DoubleToString(double number){
             return String.format(strDoubleFormat, number);         
         }
         
-        ParSectionElem(int numberOfSection, StatTableData.TableRowData statTableElem){
+        ParSectionElem(int sectionNumber, TableRowData statTableElem){
             super();
             lstRows = new ArrayList<>();
             
             GridPane rowHeader = new GridPane();
             rowHeader.setStyle(SECTION_HEADER_STYLE);
             rowHeader.setGridLinesVisible(true);
-            rowHeader.getColumnConstraints().addAll(col0, col1, col2, col3, 
-                col4, col5, col6, col7, col8);
+            rowHeader.getColumnConstraints().addAll(colsSetup[0], colsSetup[1], colsSetup[2], colsSetup[3], colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
             
-            rowHeader.add(new Label(String.valueOf(numberOfSection)), 0, 0);
+            rowHeader.add(new Label(String.valueOf(sectionNumber)), 0, 0);
             rowHeader.add(new Label(TimeToString(statTableElem.GetStartParallel())), 1, 0);
             rowHeader.add(new Label(TimeToString(statTableElem.GetEndParallel())), 2, 0);
             rowHeader.add(new Label(TimeToString(statTableElem.GetParallelDelta())), 3, 0);
@@ -265,34 +220,32 @@ public class StatTable extends VBox{
             rowHeader.add(new Label(DoubleToString(statTableElem.GetRate(0))), 8, 0);
             
             EventHandler<MouseEvent> threadStatEventHandlerMouseClick = new EventHandler<MouseEvent>() {
-                        @Override
-                        public void handle(MouseEvent event){
-                            System.out.println("mouse click detected! ");
-                            /*
-                            // This is useful information, please never remove it !!!
-                            System.out.println("getSource = " + event.getSource());
-                            System.out.println("getTarget = " + event.getTarget());
-                            System.out.println("event.getXY() = " + event.getX() +" "+ event.getY());
-                            System.out.println("event.getScreenXY() = " + event.getScreenX() +" "+ event.getScreenY());
-                            System.out.println("event.getSceneXY() = " + event.getSceneX()+" "+ event.getSceneY());
+                @Override
+                public void handle(MouseEvent event){
+                    System.out.println("mouse click detected! ");
+                    /*
+                    // This is useful information, please never remove it !!!
+                    System.out.println("getSource = " + event.getSource());
+                    System.out.println("getTarget = " + event.getTarget());
+                    System.out.println("event.getXY() = " + event.getX() +" "+ event.getY());
+                    System.out.println("event.getScreenXY() = " + event.getScreenX() +" "+ event.getScreenY());
+                    System.out.println("event.getSceneXY() = " + event.getSceneX()+" "+ event.getSceneY());
 
-                            System.out.println("row.contains(getXY) = " + row.contains(event.getX(), event.getY()));
-                            System.out.println("row.contains(getScreenXY) = " + row.contains(event.getScreenX(), event.getScreenY()));
-                            System.out.println("row.contains(getSceneXY) = " + row.contains(event.getSceneX(), event.getSceneY()));
-                            */
-                            MouseClickEventHandle(event);
-                            event.consume();
-                        }
+                    System.out.println("row.contains(getXY) = " + row.contains(event.getX(), event.getY()));
+                    System.out.println("row.contains(getScreenXY) = " + row.contains(event.getScreenX(), event.getScreenY()));
+                    System.out.println("row.contains(getSceneXY) = " + row.contains(event.getSceneX(), event.getSceneY()));
+                    */
+                    MouseClickEventHandle(event);
+                    event.consume();
+                }
             };
             
             rowHeader.setOnMouseClicked(threadStatEventHandlerMouseClick);
 
             lstRows.add(rowHeader);
-            this.getChildren().add(rowHeader); // this, grScroll
+            this.getChildren().add(rowHeader);
             
-            for(int tid=1; tid < statTableElem.GetNumThreads(); ++tid){
-                //System.out.println("CreateBody: cell for thread_id = " + String.valueOf(i));
-
+            for(int tid = 1; tid < statTableElem.GetNumThreads(); ++tid){
                 GridPane addRow = new GridPane();
                 addRow.setStyle(ROW_STYLE);
                 addRow.setGridLinesVisible(true);
@@ -303,48 +256,44 @@ public class StatTable extends VBox{
                 addRow.add(new Label(TimeToString(statTableElem.GetPayloadDelta(tid))), 4, tid);
                 addRow.add(new Label(DoubleToString(statTableElem.GetRate(tid))), 5, tid);
 
-                addRow.getColumnConstraints().addAll(colsIndent, 
-                    col4, col5, col6, col7, col8);
+                addRow.getColumnConstraints().addAll(colsIndentSetup, colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
 
-                lstRows.add(addRow); // this, grScroll
+                lstRows.add(addRow);
             }
+            this.getChildren().addAll(lstRows.subList(1, lstRows.size()));
             SetAllVisible(false);
         }
 
         public boolean IsAllVisible(){
-            System.out.println("ParSectionElem::IsAllVisible(): lstRows.size()="+lstRows.size()+"==this.getChildren().size()=" + this.getChildren().size());
-            return (lstRows.size() == this.getChildren().size());//(-1) if there is grScroll
+            return m_isAllVisible;
         }
         
         public void SetAllVisible(boolean isAllVisible){
-            if(isAllVisible){
-                this.getChildren().addAll(lstRows.subList(1, lstRows.size()));
+            m_isAllVisible = isAllVisible;
+            if(m_isAllVisible){
+                this.getChildren().forEach((elem) -> { elem.setVisible(true);});
             }else{
-                this.getChildren().removeAll(lstRows.subList(1, lstRows.size()));
+                this.getChildren().forEach((elem) -> { elem.setVisible(false);});
+                this.getChildren().get(0).setVisible(true);
             }
         }
         
         public void MouseClickEventHandle(MouseEvent event) {
-            System.out.println(" STAT TABLE: Mouse event ");
             MouseButton button = event.getButton();
-
-            if(button == MouseButton.PRIMARY){
-                System.out.println("PRIMARY button clicked");
-                
-                this.SetAllVisible(!this.IsAllVisible());
-            }else if(button==MouseButton.SECONDARY){
-                System.out.println("SECONDARY button clicked");
-
-
-            }else if(button==MouseButton.MIDDLE){
-                System.out.println("MIDDLE button clicked");
+            if(null != button)switch (button) {
+                case PRIMARY:
+                    System.out.println("PRIMARY button clicked");
+                    this.SetAllVisible(!this.IsAllVisible());
+                    break;
+                case SECONDARY:
+                    System.out.println("SECONDARY button clicked");
+                    break;
+                case MIDDLE:
+                    System.out.println("MIDDLE button clicked");
+                    break;
+                default:
+                    break;
             }
-            //System.out.println("Click to " + rect.GetFuncName());
         }
-        
-        
-        
     }
-        
 }
-

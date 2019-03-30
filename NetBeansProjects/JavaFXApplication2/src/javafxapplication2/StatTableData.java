@@ -9,31 +9,35 @@ import java.util.ArrayList;
 import java.util.ListIterator;
 
 /**
- *
- * @author HP
+ * @brief the class keeps data for all parallel sections in an application and provides data to a table for presentation.
+ * Filling all the information about all parallel sections is delegated to another class(ThreadStat)
+ * StatTableData has data all of TableRowes
+ * @author hp
  */
 public class StatTableData {
 
     private ArrayList<TableRowData> ParallelSections;
     private static int LastIter = 0;
-    
-    StatTableData(){
-        ParallelSections = new ArrayList<TableRowData>();
-    }
-    
-    public ArrayList<TableRowData> GetRefParallelSections(){
-        return ParallelSections;
-    }
-    
-    public void ClearPrevData(){
-        ParallelSections.clear();
-    }
-    
+
     public static void ClearLastIterInEachThreadStat(){
         LastIter = 0;
     }
+
+    StatTableData(){
+        ParallelSections = new ArrayList<TableRowData>();
+    }
+
+    public ArrayList<TableRowData> GetRefParallelSections(){
+        return ParallelSections;
+    }
+
+    public void ClearPrevData(){
+        ParallelSections.clear();
+    }
+
+
 /*    
-    private boolean IsNestedParallelSection(Section sec){
+    private boolean IsNestedParallelSection(ISection sec){
         if(ParallelSections.isEmpty()){
             return true;    
         }
@@ -43,9 +47,7 @@ public class StatTableData {
         }
     }
 */
-    
-    public boolean AddParallel(Section sec){
-
+    public boolean AddParallel(ISection sec){
         double startParTime = sec.GetStartTime();
         double endParTime = sec.GetEndTime();
         TableRowData stc = new TableRowData(startParTime, endParTime);
@@ -53,8 +55,8 @@ public class StatTableData {
         sec.SetSectionIndex(ParallelSections.size()-1);
         return true;
     }
-            
-    public boolean AddPayload(int tid, Section sec){
+   
+    public boolean AddPayload(int tid, ISection sec){
         double startPayTime = sec.GetStartTime();
         double endPayTime = sec.GetEndTime();
         
@@ -62,7 +64,7 @@ public class StatTableData {
         boolean isFound = false;
         TableRowData ParSec = null;
         /*if(tid == 0){
-            // begin at the end
+            // begin from the end
             while(Iter.hasPrevious()){
                 ParSec = (TableRowData) Iter.previous();
                 if(ParSec.startParallelTime <= startPayTime && endPayTime <= ParSec.GetEndParallel()){
@@ -71,7 +73,7 @@ public class StatTableData {
                 }
             }
         }else{*/
-            // begin at the start
+            // begin from the start
             while(Iter.hasNext()){
                 ParSec = (TableRowData) Iter.next();
                 if(ParSec.GetStartParallel() <= startPayTime && endPayTime <= ParSec.GetEndParallel()){
@@ -84,70 +86,11 @@ public class StatTableData {
                 }
             }
         return true;
-    } 
-        
+    }
+
     /*
     public boolean checkPayloadValid(double endParTime, double startPayTime){
         return (endParTime < startPayTime);
     }
     */
-    
-    // One parallel section - One instance of the TableRowData class 
-    public class TableRowData {
-        private double startParallelTime;
-        private double endParallelTime;
-        private ArrayList startPayloadTime;
-        private ArrayList endPayloadTime;
-        
-        public boolean IsValid(){
-            System.out.println("startPayloadTime.size() = " + startPayloadTime.size());
-            System.out.println("endPayloadTime.size() = " + endPayloadTime.size());
-            return (endPayloadTime.size() == startPayloadTime.size());
-        }
-        
-        public int GetNumThreads(){
-            return endPayloadTime.size();
-        }
-        
-        TableRowData(final double startParTime, final double endParTime){
-            this.startParallelTime = startParTime;
-            this.endParallelTime = endParTime;
-            this.startPayloadTime = new ArrayList();
-            this.endPayloadTime = new ArrayList();
-        }
-        
-        public void AddPayload(final double startPayTime, final double endPayTime){
-            this.startPayloadTime.add(startPayTime);
-            this.endPayloadTime.add(endPayTime);
-        }
-        
-        public double GetStartParallel(){
-            return this.startParallelTime;
-        }
-
-        public double GetEndParallel(){
-            return this.endParallelTime;
-        }
-
-        public double GetStartPayload(final int i){
-            return (double)(this.startPayloadTime.get(i));
-        }
-
-        public double GetEndPayload(final int i){
-            return (double)(this.endPayloadTime.get(i));
-        }
-
-        public double GetParallelDelta(){
-            return endParallelTime - startParallelTime;
-        }
-
-        public double GetPayloadDelta(final int i){
-            return (double)(this.endPayloadTime.get(i)) - (double)(this.startPayloadTime.get(i));
-        }
-        
-        public double GetRate(final int i){
-            return GetPayloadDelta(i)/GetParallelDelta();
-        }
-        
-    }
 }
