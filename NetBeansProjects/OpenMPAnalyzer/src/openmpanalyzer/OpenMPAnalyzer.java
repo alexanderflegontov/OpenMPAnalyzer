@@ -139,7 +139,7 @@ public class OpenMPAnalyzer extends Application  {
         primaryStage.setTitle("Tracing " + strProgName + " - is completed!");
 
         System.out.println("=================StartAnalyzeData============");
-        primaryStage.setTitle("Start analyzing the data" + strProgName);
+        primaryStage.setTitle("Start analyzing the data " + strProgName);
 
         final String strPinToolOutfile = DataAnalyzer.DEFAULT_PINTOOL_OUT_PATH+DataAnalyzer.DEFAULT_PINTOOL_OUT_CONF;
         DataAnalyzer analyzeData = new DataAnalyzer();
