@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.util.HashSet;
 import javafx.geometry.Insets;

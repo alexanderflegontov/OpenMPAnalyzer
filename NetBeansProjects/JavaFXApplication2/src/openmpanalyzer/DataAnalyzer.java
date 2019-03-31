@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,7 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.security.InvalidParameterException;
 
-import static javafxapplication2.MappingFuncNames.FUNC_NAME_TO_FUNC_ID;
+import static openmpanalyzer.MappingFuncNames.FUNC_NAME_TO_FUNC_ID;
 
 /**
  * @brief The class to process .out text file

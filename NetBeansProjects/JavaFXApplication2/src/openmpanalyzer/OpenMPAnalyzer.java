@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.io.File;
 import java.util.Map;
@@ -37,7 +37,7 @@ import javafx.stage.FileChooser;
  * @brief The main class to run "OpenMP App Analyzer" tool
  * @author HP
  */
-public class JavaFXApplication2 extends Application  {
+public class OpenMPAnalyzer extends Application  {
     private static final String STR_PROGRAM_TITLE = "OpenMP App Analyzer";
     private static final int W = 870;
     private static final int H = 820;
@@ -79,7 +79,7 @@ public class JavaFXApplication2 extends Application  {
     public void start(Stage primaryStage){
         Group root = new Group();
         root.setStyle(BACKGROUND_STYLE);
-        Scene scene = new Scene(root, W, H-12); // (-12) -> 0
+        Scene scene = new Scene(root, W, H); // (-12) -> 0
         primaryStage.setTitle(STR_PROGRAM_TITLE);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -171,7 +171,7 @@ public class JavaFXApplication2 extends Application  {
         ScrollPane metricBoardScroller = new ScrollPane();
         //metricBoardScroller.setMinViewportHeight(300);      
         metricBoardScroller.setVbarPolicy(ScrollBarPolicy.NEVER);
-        metricBoardScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        metricBoardScroller.setHbarPolicy(ScrollBarPolicy.AS_NEEDED);
         //metricBoardScroller.setMinSize(mainStatWindow.rectCanvas.getWidth(), mainStatWindow.rectCanvas.getHeight());
         metricBoardScroller.setMinSize((int) scene.getWidth(),MetricBoard.H);
         metricBoardScroller.setMaxSize((int) scene.getWidth(),MetricBoard.H);
@@ -195,7 +195,7 @@ public class JavaFXApplication2 extends Application  {
         VBox mainVerticalBox = new VBox();
         mainVerticalBox.setSpacing(VBOX_SPASING);
         mainVerticalBox.setPadding(VBOX_INSERTS);
-        mainVerticalBox.setMaxWidth(SettingWindow.WIDTH);
+        //mainVerticalBox.setMaxWidth(SettingWindow.WIDTH);
         mainVerticalBox.getChildren().addAll(vbInputPanel, vbOutputPanel);
         return mainVerticalBox;
     }

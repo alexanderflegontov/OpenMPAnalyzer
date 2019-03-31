@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.util.ArrayList;
 import javafx.event.EventHandler;
@@ -17,6 +17,7 @@ import javafx.scene.layout.Border;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import static openmpanalyzer.SettingWindow.SCROLL_BAR_WIDTH;
 
 /**
  * @brief The class is a representation of all parallel sections in traced program.
@@ -39,10 +40,14 @@ public class StatTableView extends VBox{
     private static final String[] HEADER_STRINGS = {"section№", "start time", "end time", "delta", "TID","Payload start", "Payload end", "delta", "rate(%)"};
     private static final int[] HEADER_PERCENT = {9, 14, 14, 10 ,6, 14, 14, 10, 10};
     private static final String strDoubleFormat = "%."+String.valueOf(3)+"f";
+    static final double[] HEADER_COL_CORRECTION = {0.3, 0.36, 0.45, 0.36, 0.20, 0.42, 0.5, 0.30, 0.36};
+    ColumnConstraints[] colsHeaderSetup;
+    ColumnConstraints[] colsSetup;
+    ColumnConstraints colsIndentSetup;
 
     //public static final int W = 320;
-    public static final int H = 167;
-    
+    public static final int H = 165+4;//137;
+
     private StatTableData statTableData;
     private ArrayList refParallelSections;
     private GridPane header;
@@ -50,9 +55,6 @@ public class StatTableView extends VBox{
     static private ScrollPane StatTableScroller;
     static private VBox grScroll;
 
-    ColumnConstraints[] colsSetup;
-    ColumnConstraints colsIndentSetup;
-    
     public StatTableData GetStatTableData(){
         return statTableData;
     }
@@ -64,20 +66,32 @@ public class StatTableView extends VBox{
         refParallelSections = statTableData.GetRefParallelSections();
 
         grScroll = new VBox();
-        //grScroll.setMaxSize( (int)sceneWidth+1, (H));
-        grScroll.setMinSize( (int)sceneWidth+11, (H)); // 11->1 
-        grScroll.setBorder(Border.EMPTY);
+        //grScroll.setMaxSize( (int)sceneWidth-SCROLL_BAR_WIDTH, (H)-SCROLL_BAR_WIDTH);
+        grScroll.setMinSize( (int)sceneWidth-SCROLL_BAR_WIDTH, (H)-SCROLL_BAR_WIDTH);
+        //grScroll.setBorder(Border.EMPTY);
         grScroll.setStyle(STAT_TABLE_STYLE);
-        
+
         StatTableScroller = new ScrollPane();
         //StatWindowScroller.setMinViewportHeight(300);
         StatTableScroller.setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
-        StatTableScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        StatTableScroller.setMinSize((int)sceneWidth+13, (H)); // 13->2 0->(2)
-        StatTableScroller.setMaxSize((int)sceneWidth+13, (H)); // 13->2 0->(2)
+        StatTableScroller.setHbarPolicy(ScrollBarPolicy.NEVER);
+        StatTableScroller.setMinSize((int)sceneWidth, (H));
+        StatTableScroller.setMaxSize((int)sceneWidth, (H));
         StatTableScroller.setContent(grScroll);
-        StatTableScroller.setBorder(Border.EMPTY);
+        //StatTableScroller.setBorder(Border.EMPTY);
         StatTableScroller.setStyle(STAT_TABLE_STYLE);
+
+        final double left_padding = SCROLL_BAR_WIDTH / sceneWidth;
+        final int last_index = HEADER_STRINGS.length-1;
+        colsHeaderSetup = new ColumnConstraints[HEADER_STRINGS.length];
+        for(int i = 0; i < last_index; ++i){
+            colsHeaderSetup[i] = new ColumnConstraints();
+            colsHeaderSetup[i].setPercentWidth((double)HEADER_PERCENT[i]-HEADER_COL_CORRECTION[i]);
+            colsHeaderSetup[i].setHalignment(HPos.CENTER);
+        }
+        colsHeaderSetup[last_index] = new ColumnConstraints();
+        colsHeaderSetup[last_index].setPercentWidth((double)HEADER_PERCENT[last_index]+left_padding);
+        colsHeaderSetup[last_index].setHalignment(HPos.CENTER);
 
         colsSetup = new ColumnConstraints[HEADER_STRINGS.length];
         for(int i = 0; i < HEADER_STRINGS.length; ++i){
@@ -85,7 +99,7 @@ public class StatTableView extends VBox{
             colsSetup[i].setPercentWidth(HEADER_PERCENT[i]);
             colsSetup[i].setHalignment(HPos.CENTER);
         }
-        
+
         colsIndentSetup = new ColumnConstraints();
         colsIndentSetup.setPercentWidth(colsSetup[0].getPercentWidth() +
                                    colsSetup[1].getPercentWidth() +
@@ -95,7 +109,7 @@ public class StatTableView extends VBox{
 
         ShowStatTable();
     }
-    
+
     public void ShowStatTable(){
         this.getChildren().clear();
         grScroll.getChildren().clear();
@@ -111,12 +125,14 @@ public class StatTableView extends VBox{
     public void UpdateUnit(double timeWidth){
         unit = Timeline.GetUnit(timeWidth);
     }
-    
+
     private void CreateHeader(){
         header = new GridPane();
         header.setStyle(HEADER_STYLE);
         header.setBorder(Border.EMPTY);
-        header.getColumnConstraints().addAll(colsSetup[0], colsSetup[1], colsSetup[2], colsSetup[3], colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
+        header.getColumnConstraints().addAll(
+                colsHeaderSetup[0], colsHeaderSetup[1], colsHeaderSetup[2], colsHeaderSetup[3],
+                colsHeaderSetup[4], colsHeaderSetup[5], colsHeaderSetup[6], colsHeaderSetup[7], colsHeaderSetup[8]);
 
         final String strUnit = "," + Timeline.UNIT[unit];
         header.add(new Label(HEADER_STRINGS[0]), 0, 0);
@@ -207,7 +223,9 @@ public class StatTableView extends VBox{
             GridPane rowHeader = new GridPane();
             rowHeader.setStyle(SECTION_HEADER_STYLE);
             rowHeader.setGridLinesVisible(true);
-            rowHeader.getColumnConstraints().addAll(colsSetup[0], colsSetup[1], colsSetup[2], colsSetup[3], colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
+            rowHeader.getColumnConstraints().addAll(
+                    colsSetup[0], colsSetup[1], colsSetup[2], colsSetup[3],
+                    colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
             
             rowHeader.add(new Label(String.valueOf(sectionNumber)), 0, 0);
             rowHeader.add(new Label(TimeToString(statTableElem.GetStartParallel())), 1, 0);
@@ -256,7 +274,9 @@ public class StatTableView extends VBox{
                 addRow.add(new Label(TimeToString(statTableElem.GetPayloadDelta(tid))), 4, tid);
                 addRow.add(new Label(DoubleToString(statTableElem.GetRate(tid))), 5, tid);
 
-                addRow.getColumnConstraints().addAll(colsIndentSetup, colsSetup[4], colsSetup[5], colsSetup[6], colsSetup[7], colsSetup[8]);
+                addRow.getColumnConstraints().addAll(
+                        colsIndentSetup, colsSetup[4], colsSetup[5],
+                        colsSetup[6], colsSetup[7], colsSetup[8]);
 
                 lstRows.add(addRow);
             }

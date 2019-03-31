@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import javafx.scene.Group;
 import javafx.scene.control.Label;
@@ -14,13 +14,13 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import java.security.InvalidParameterException;
 
-import javafxapplication2.DataAnalyzer.Mark;
-import static javafxapplication2.SettingWindow.H_STAT_RECT;
-import static javafxapplication2.SettingWindow.TIME_STAMP_FONT;
-import static javafxapplication2.SettingWindow.OFFSET_Y_SECTION_LABEL;
-import static javafxapplication2.SettingWindow.OFFSET_Y_SCALE_LINE;
-import static javafxapplication2.SettingWindow.OFFSET_Y_SECTION_EDG_TIMESTAMPS;
-import static javafxapplication2.SettingWindow.W;
+import openmpanalyzer.DataAnalyzer.Mark;
+import static openmpanalyzer.SettingWindow.H_STAT_RECT;
+import static openmpanalyzer.SettingWindow.TIME_STAMP_FONT;
+import static openmpanalyzer.SettingWindow.OFFSET_Y_SECTION_LABEL;
+import static openmpanalyzer.SettingWindow.OFFSET_Y_SCALE_LINE;
+import static openmpanalyzer.SettingWindow.OFFSET_Y_SECTION_EDG_TIMESTAMPS;
+import static openmpanalyzer.SettingWindow.W;
 
 /**
  * Interface for a section

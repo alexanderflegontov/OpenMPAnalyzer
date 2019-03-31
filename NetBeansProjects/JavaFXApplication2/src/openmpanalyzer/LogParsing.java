@@ -3,16 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
-import javafxapplication2.DataAnalyzer.Mark;
-import static javafxapplication2.Section.CreateStartEndSection;
-import static javafxapplication2.Section.CreateAtomSection;
+import openmpanalyzer.DataAnalyzer.Mark;
+import static openmpanalyzer.Section.CreateStartEndSection;
+import static openmpanalyzer.Section.CreateAtomSection;
 
 /**
  * @brief The class to parse all pintool marks created by DataAnalyzer

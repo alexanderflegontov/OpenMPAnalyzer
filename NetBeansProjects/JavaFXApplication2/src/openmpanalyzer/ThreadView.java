@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +16,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import static javafxapplication2.SettingWindow.H_STAT_RECT;
-import static javafxapplication2.SettingWindow.W;
+import static openmpanalyzer.SettingWindow.H_STAT_RECT;
+import static openmpanalyzer.SettingWindow.W;
 
 /**
  * @brief the class keeps statistics of its thread.

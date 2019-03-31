@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package javafxapplication2;
+package openmpanalyzer;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,9 +27,8 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Line;
-import javafxapplication2.DataAnalyzer.Mark;
-
-import static javafxapplication2.SettingWindow.*;
+import openmpanalyzer.DataAnalyzer.Mark;
+import static openmpanalyzer.SettingWindow.*;
 
 /**
  * @brief class is responsible for showing all the results.
@@ -170,7 +169,8 @@ public class StatisticWindow extends Group{
         StatWindowScroller.vvalueProperty().bindBidirectional(posY);
         posX.addListener(o -> UpdateTimestampLine());
 
-        StatWindowScroller.addEventHandler(ScrollEvent.ANY, new EventHandler<ScrollEvent>() {
+        
+        StatWindowScroller.addEventFilter(ScrollEvent.SCROLL, new EventHandler<ScrollEvent>() {
             @Override
             public void handle(ScrollEvent event) { // Scale by X
                 // Update X position
@@ -193,7 +193,7 @@ public class StatisticWindow extends Group{
                 ScrollingGroup.setScaleX(scale);
                 event.consume();
             }
-        });
+       });
     }
 
     public static double clamp( double value, double min, double max) {
