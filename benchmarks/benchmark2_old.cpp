@@ -446,7 +446,7 @@ double Parallel_hack(const char* hash, std::string& pwd, const int MinCodeLen, c
 int main(int argc, char* argv[]){
 
     omp_set_nested(1);
-    
+
     //omp_set_max_active_levels(2);
     const char default_alphabet[ALPHABET_SET_MAX_COUNT] = "123";
     char hash[HASH_LENGTH_MAX] = {"/0"};
@@ -467,21 +467,21 @@ int main(int argc, char* argv[]){
             if(block_size <= 0)
             {
                 block_size = 1;
-            }                
+            }
         }
         case 8:{
             numThreadsLvl2 = atoi(argv[(7)]);
             if(numThreadsLvl2 <= 0)
             {
                 numThreadsLvl2 = 1;
-            }                
-        }        
+            }
+        }
         case 7:{
             numThreadsLvl1 = atoi(argv[(6)]);
             if(numThreadsLvl1 <= 0)
             {
                 numThreadsLvl1 = 1;
-            }                
+            }
         }
         
         case 6:{/*
@@ -542,7 +542,7 @@ int main(int argc, char* argv[]){
         default:
             break;
     }
-    
+
     // checks
     if(!( PASSWORD_LENGTH_MIN <= MinCodeLen && MinCodeLen <= PASSWORD_LENGTH_MAX)){
         MinCodeLen = 1; 
@@ -552,7 +552,6 @@ int main(int argc, char* argv[]){
         MaxCodeLen = 3; 
     }
 
-    
     std::cout << "  Your hash " << hash << std::endl;
     std::cout << "  Your params for searching: " << std::endl;
     std::cout << "    MinCodeLen: " << MinCodeLen << std::endl;

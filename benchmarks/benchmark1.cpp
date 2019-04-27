@@ -1,198 +1,79 @@
+#include "bench_lib.hpp"
 #include <iostream>
+#include <iomanip>
 #include <cstring>
-#include <stdlib.h>
-#include "omp.h"
-#include <fstream>
-//#include <windows.h>
-
-#include <cmath>
-#include <iomanip>
-#include <openssl/sha.h> 
-#include <cstdint>
 #include <sstream>
-#include <algorithm>
-#include <cctype>
-#include <iomanip>
-#include <cmath>
+//#include <fstream>
+#include "omp.h"
 
-const int ALPHABET_SET_MAX_COUNT = 100;
-const int PASSWORD_LENGTH_MIN = 1;
-static const int PASSWORD_LENGTH_MAX = 10;
-static const int HASH_LENGTH_MAX = SHA256_DIGEST_LENGTH;
+#include <unistd.h>
+#include <fcntl.h>
+//#include <errno.h>
+
+
+const std::string OUTPUT_FILE = "benchmark1.out";
+
 static int numThreads = 4;
 static bool IsFound = false;
 static bool test_mode = false;
 
-//#define PRINT_LOG
 
-/*
-void BindThreadsOnCores()
+void WriteResultLog(const uint64_t numThreads,
+                    const uint64_t numCombs,
+                    const double duration_time,
+                    const uint64_t CodeLen,
+                    const uint64_t numRegions,
+                    const uint64_t block_size)
 {
-    #pragma omp parallel default(shared)
-	{
-		DWORD_PTR mask = (1 << omp_get_thread_num());
-		SetThreadAffinityMask(GetCurrentThread(), mask);
-	}
-}
-*/
+    std::string const &RESULT_CONTEXT = std::to_string(numThreads) + ","
+                                      + std::to_string(numCombs) + ","
+                                      + std::to_string(duration_time) + ","
+                                      + std::to_string(CodeLen) + ","
+                                      + std::to_string(numRegions) + ","
+                                      + std::to_string(block_size) + "\n";
 
-void PrintSpeedUpResults(double sequentTimeWork, double parallTimeWork)
-{
-	std::cout << "\n Who is faster? ...";
-	if (parallTimeWork < sequentTimeWork)
-		std::cout << " Parallel algorithm" << std::endl;
-	else
-		std::cout << " Sequential algorithm" << std::endl;
-
-	//std::cout.precision(3);
-	//std::cout.setf(std::ios::fixed);
-    std::cout << "# sequentTimeWork: "  << sequentTimeWork << std::endl << "# parallTimeWork: " <<  parallTimeWork << std::endl;
-	std::cout << "# Speedup: "  << sequentTimeWork / parallTimeWork << std::endl;
-}
-
-bool CheckValidHash(std::string const &hash)
-{
-    bool bOk = false;
-    if((!hash.empty()) && (hash.length() % 2 == 0))
+    int fd = open(OUTPUT_FILE.c_str(), O_WRONLY | O_APPEND | O_CREAT, S_IRWXU);
+    if(fd == -1)
     {
-        auto isxDigest = [](char ch){ return !isxdigit(ch); };
-        bOk = std::find_if(hash.begin(), hash.end(), isxDigest) == hash.end();
-        if(!bOk)
-        {
-            std::cout << "The hash has non-hexagonal char(s)!" << std::endl;
-        }
+        MSG("Error open file: " << OUTPUT_FILE.c_str() <<  std::endl);
     }
-    else
+    auto writedSize = write(fd, RESULT_CONTEXT.c_str(), RESULT_CONTEXT.length());
+    if(writedSize == -1)
     {
-        std::cout << "The hash hasn't odd length!" << std::endl;
+        MSG("Error write to file: " << OUTPUT_FILE.c_str() <<  std::endl);
     }
-    return bOk;
-}
 
-inline void GetHexHash256(const char comb[], const int len, char * retval)
-{
-    unsigned char digest[SHA256_DIGEST_LENGTH];
- 
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, comb, len);
-    SHA256_Final(digest, &ctx);
- 
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
-        sprintf(&retval[i*2], "%02x", (unsigned int)digest[i]);
-    //std::cout << "SHA256_v2 digest: " << retval << " - " << digest << std::endl;
-}
-
-inline std::string GetHexHash256(const char comb[], const int len)
-{
-    unsigned char digest[SHA256_DIGEST_LENGTH];
- 
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, comb, len);
-    SHA256_Final(digest, &ctx);
- 
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+    if(close(fd) == -1)
     {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(digest[i]);
+        MSG("Error close file: " << OUTPUT_FILE.c_str() <<  std::endl);
     }
-    //std::cout << "SHA256 hexstring: " << ss.str() << " - " << digest << std::endl;
-    return ss.str();
 }
 
-inline void GetHash256(const char comb[], const int len, unsigned char* digest)
+std::pair<double, std::string> Sequent_hack(const char* hash,
+                                            const size_t MinCodeLen,
+                                            const size_t MaxCodeLen,
+                                            std::string const &alphabet)
 {
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, comb, len);
-    SHA256_Final(digest, &ctx);
-}
-
-inline std::string DigitToHexString(const unsigned char* digest)
-{
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
-    {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(digest[i]);
-    }
-    //std::cout << "SHA256 hexstring: " << ss.str() << " - " << digest << std::endl;
-    return ss.str(); 
-}
-
-inline void DigitToHexString(const unsigned char* digest, char* retval)
-{
-   for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i)
-        sprintf(&retval[i*2], "%02x", static_cast<int>(digest[i]));
-    //std::cout << "SHA256 hexstring: " << retval << " - " << digest << std::endl;
-}
-
-// HexToAscii
-std::string HexToDigit(std::string const &strHex)
-{
-    std::string strDigit;
-    size_t len = strHex.length();
-    strDigit.reserve(len / 2);
-    for (auto i = 0; i < len; i += 2)
-    {
-        std::string const byte = strHex.substr(i, 2);
-        char chr = static_cast<char>(std::stoul(byte, nullptr, 16));
-        strDigit.push_back(chr);
-    }
-    //std::cout << "SHA256 hexstring: " << strHex << " to digest: " << strDigit << std::endl;
-    return strDigit;
-}
-
-inline void CurrentPrint(const int CodeLen, const int iter, const int maxCountIter, time_t start_time)
-{
-    const double spentTime = (omp_get_wtime()-start_time);
-    const double DoneInPercent = (double(iter)/maxCountIter)*100.;
-    std::cout << "CodeLen=" << CodeLen 
-    << std::setw(3) << " iter= " << iter 
-    << "[" << DoneInPercent << "%]" 
-    << std::setw(3) << " elapsed " << spentTime << "sec. " 
-    << std::setw(3) << " remaining " << ((100.0-DoneInPercent)*(spentTime/DoneInPercent))/(3600.) << " hours "
-    <<  std::endl;
-}
-
-inline void CurrentPrintParallel(const int CodeLen, const int iter, const int maxCountIter, time_t start_time)
-{
-    const double spentTime = (omp_get_wtime()-start_time);
-    const size_t payloadPerThread = maxCountIter/omp_get_num_threads();
-    const size_t ownTidIteration = iter % payloadPerThread; 
-    const double DoneInPercent = (ownTidIteration/static_cast<double>(payloadPerThread))*100.;
-    std::cout << "CodeLen=" << CodeLen 
-    << std::setw(3) << " iter= " << iter 
-    << "[" << DoneInPercent << "%]" 
-    << std::setw(3) << " elapsed " << spentTime << "sec. " 
-    << std::setw(3) << " remaining " << ((100.0-DoneInPercent)*(spentTime/DoneInPercent))/(3600.) << " hours "
-    <<  std::endl;
-}
-
-std::pair<double, std::string> Sequent_hack(const char* hash, const size_t MinCodeLen, const size_t MaxCodeLen, std::string const &alphabet)
-{
-    std::cout << "####### Sequent_hack #######" << std::endl;
-    IsFound = false;
-    std::string pwd;
-
-    size_t lenAlp = alphabet.length();
+    MSG("####### Sequent_hack #######" << std::endl);
+    const size_t lenAlp = alphabet.length();
     uint64_t tmpMaxCombin = pow(lenAlp, MaxCodeLen);
-    //std::cout << "# tmpMaxCombin = " << tmpMaxCombin << std::endl;
 
-#ifdef PRINT_LOG
+#ifdef PRINT_ITER_LOG
     static size_t PrintInterval = 100;
     if((MaxCodeLen > 5) && (tmpMaxCombin > 1000)){
         double print_pwr = std::log10(tmpMaxCombin);
         PrintInterval = std::pow(10, static_cast<size_t>(print_pwr-1));
     }
-    std::cout << "# PrintInterval = " << PrintInterval << std::endl;
+    MSG("# PrintInterval = " << PrintInterval << std::endl);
 #endif
 
     int save_iter = -1;
-    double trigger_time = 0, end_time = 0;
-    double start_time = omp_get_wtime();
+    double trigger_time = 0;
+    const double start_time = omp_get_wtime();
 
-    char* comb = new char[PASSWORD_LENGTH_MAX];
+    IsFound = false;
+    std::string pwd;
+    char* comb = new char[MaxCodeLen];
     unsigned char* strRetDigistHash = new unsigned char[HASH_LENGTH_MAX];
 
     for(auto CodeLen = MinCodeLen; !IsFound && CodeLen <= MaxCodeLen; ++CodeLen)
@@ -201,24 +82,24 @@ std::pair<double, std::string> Sequent_hack(const char* hash, const size_t MinCo
         for(auto iter = 0; iter < maxCountIter; ++iter)
         {
             uint64_t tmpIter = iter;
-            //std::cout << "current:";
+            //MSG("current:");
             for(auto len = 0; len < CodeLen; ++len)
             //for(auto len = (CodeLen-1); len >= 0; --len)
             {
-                uint64_t index = tmpIter % lenAlp;
+                const uint64_t index = tmpIter % lenAlp;
                 comb[len] = alphabet[index];
-                //std::cout << index;
+                //MSG(index);
                 tmpIter /= lenAlp;
             }
-            //std::cout << std::endl;
-            //std::cout << "Comb = " << std::string(comb, CodeLen) << std::endl;
+            //MSG(std::endl);
+            //MSG("Comb = " << std::string(comb, CodeLen) << std::endl);
 
             GetHash256(comb, CodeLen, strRetDigistHash);
 
             if(memcmp(hash, strRetDigistHash, HASH_LENGTH_MAX) == 0)
             {
                 trigger_time = omp_get_wtime() - start_time;
-                //std::cout << "--------------START_Trigger_Time[tid = " << trigger_tid << "] = " << endtime << "sec. comb=" << comb << std::endl;
+                //MSG("--------------START_Trigger_Time[tid = " << trigger_tid << "] = " << endtime << "sec. comb=" << comb << std::endl);
                 pwd = std::string(comb, CodeLen);
                 IsFound = true;
                 save_iter = iter;
@@ -226,165 +107,157 @@ std::pair<double, std::string> Sequent_hack(const char* hash, const size_t MinCo
                 break;
             }
 
-#ifdef PRINT_LOG
+#ifdef PRINT_ITER_LOG
             if(iter % PrintInterval == 0)
             {
-                std::cout << "------------iteration = " << iter << "." <<  std::endl;
+                MSG("------------iteration = " << iter << "." <<  std::endl);
                 CurrentPrint(CodeLen, iter, maxCountIter, start_time); 
             }
 #endif
             //double h2 = omp_get_wtime() - start_time;
-            //std::cout << "One hash iteration calcTime = " << h2 - h1 << std::endl;
+            //MSG("One hash iteration calcTime = " << h2 - h1 << std::endl);
         }
     }
     delete[] comb;
     delete[] strRetDigistHash;
 
-    end_time = omp_get_wtime() - start_time;
-    std::cout << "------------Trigger_Time[main] = " << trigger_time << "sec." <<  std::endl;
-    std::cout << "------------TotalTime = " << end_time << "sec."<< std::endl;
-    std::cout << " -----------diff(TotalTime, Trigger_Time)= " << (end_time - trigger_time) << "sec." << std::endl;
-    std::cout << "------------save_iter = " << save_iter <<  std::endl;
-    return std::make_pair(end_time, pwd);
+    const double end_time = omp_get_wtime();
+    const double duration_time = end_time - start_time;
+    MSG("------------Trigger_Time[main] = " << trigger_time << "sec." <<  std::endl);
+    MSG("------------TotalTime = " << duration_time << "sec."<< std::endl);
+    MSG(" -----------diff(TotalTime, Trigger_Time)= " << (duration_time - trigger_time) << "sec." << std::endl);
+    MSG("------------save_iter = " << save_iter <<  std::endl);
+    return std::make_pair(duration_time, pwd);
 }
 
-void PrintRegionAndCombCount(const size_t MinCodeLen, const size_t MaxCodeLen, std::string const &alphabet, const uint64_t block_size)
+std::pair<double, std::string> Parallel_hack(const char* hash,
+                                             const size_t MinCodeLen,
+                                             const size_t MaxCodeLen,
+                                             std::string const &alphabet,
+                                             const uint64_t block_size)
 {
-    uint64_t regionCount = 0;
-    uint64_t combCount = 0;
-    size_t lenAlp = alphabet.length();
-    for(auto CodeLen = MinCodeLen; CodeLen <= MaxCodeLen; ++CodeLen)
-    {
-        const uint64_t maxCountIter = pow(lenAlp, CodeLen);
-        combCount += maxCountIter;
+    MSG("####### Parallel_hack #######" << std::endl);
+    const size_t lenAlp = alphabet.length();
+    auto info = CalculateInfo(MinCodeLen, MaxCodeLen, alphabet, block_size);
+    const auto numRegions = std::get<0>(info);
+    const auto numCombs = std::get<1>(info);
+    const auto numLostCombs = std::get<2>(info);
+    MSG("# numThreads = " << numThreads << std::endl);
+    MSG("# numRegions = " << numRegions << std::endl);
+    MSG("# numCombs = " << numCombs << std::endl);
+    MSG("# lost combs = " << numLostCombs << std::endl);
+    MSG("# block_size[regionCount=100] = " << numCombs / 100 << std::endl);
 
-    	const auto iterBlockMax = maxCountIter / block_size;
-        regionCount += iterBlockMax;
+#ifdef PRINT_ITER_LOG
+    static size_t PrintInterval = 100;
+    if((MaxCodeLen > 5) && (numCombs > 1000)){
+        double print_pwr = std::log10(numCombs);
+        PrintInterval = std::pow(10, static_cast<size_t>(print_pwr-1));
     }
-    std::cout << "# regionCount = " << regionCount << std::endl;
-    std::cout << "# combCount = " << combCount << std::endl;
-}
+    MSG("# PrintInterval = " << PrintInterval << std::endl);
+#endif
 
-// one for iteration = 12-14 and 45 microseconds
-std::pair<double, std::string> Parallel_hack(const char* hash, const size_t MinCodeLen, const size_t MaxCodeLen, std::string const &alphabet, const uint64_t block_size)
-{
-    std::cout << "####### Parallel_hack #######" << std::endl;
-    //BindThreadsOnCores();
+    int trigger_tid = -1, save_iter = -1;
+    double trigger_time = 0;
+    const double start_time = omp_get_wtime();
     omp_set_num_threads(numThreads);
     IsFound = false;
     std::string pwd;
 
-    size_t lenAlp = alphabet.length();
-    uint64_t tmpMaxCombin = pow(lenAlp, MaxCodeLen);
-    std::cout << "# Num_threads = " << numThreads << std::endl;
-    PrintRegionAndCombCount(MinCodeLen, MaxCodeLen, alphabet, block_size);
-    std::cout << "# lost combs = " << tmpMaxCombin % block_size << std::endl;
-    std::cout << "# block_size[regionCount=100] = " << tmpMaxCombin / 100 << std::endl;
-
-#ifdef PRINT_LOG
-    static size_t PrintInterval = 100;
-    if((MaxCodeLen > 5) && (tmpMaxCombin > 1000)){
-        double print_pwr = std::log10(tmpMaxCombin);
-        PrintInterval = std::pow(10, static_cast<size_t>(print_pwr-1));
-    }
-    std::cout << "# PrintInterval = " << PrintInterval << std::endl;
-#endif
-
-    int trigger_tid = -1, save_iter = -1, cancel_count = 0;
-    double trigger_time = 0, end_time = 0;
-    double start_time = omp_get_wtime();
-
-    char* comb = new char[PASSWORD_LENGTH_MAX * block_size];
+    char* comb = new char[MaxCodeLen * block_size];
     unsigned char* strRetDigistHash = new unsigned char[HASH_LENGTH_MAX * block_size];
 
     for(auto CodeLen = MinCodeLen; !IsFound && CodeLen <= MaxCodeLen; ++CodeLen)
     {
         const uint64_t maxCountIter = pow(lenAlp, CodeLen);
-    	//std::cout << "thread #" << omp_get_thread_num() << std::endl;
+    	//MSG("thread #" << omp_get_thread_num() << std::endl);
 
     	const auto iterBlockMax = maxCountIter / block_size;
         for(auto iterBlock = 0; iterBlock < iterBlockMax; ++iterBlock)
         {
+            const auto block_offset = block_size * iterBlock;
             #pragma omp parallel for //num_threads(block_size)
             for(auto iter = 0; iter < block_size; ++iter)
             {
-                char* pComb = comb + PASSWORD_LENGTH_MAX * iter;
-                uint64_t iteration = block_size * iterBlock + iter;
+                char* pComb = comb + MaxCodeLen * iter;
+                const uint64_t iteration = block_offset + iter;
                 uint64_t tmpIter = iteration;
-                //std::cout << "current:";
+                //MSG("current:");
                 for(auto len = 0; len < CodeLen; ++len)
                 //for(auto len = (CodeLen-1); len >= 0; --len)
                 {
-                    uint64_t index = tmpIter % lenAlp;
+                    const uint64_t index = tmpIter % lenAlp;
                     pComb[len] = alphabet[index];
-                    //std::cout << index;
+                    //MSG(index);
                     tmpIter /= lenAlp;
                 }
-                //std::cout << std::endl;
+                //MSG(std::endl);
+                auto pRetDigistHash = strRetDigistHash + HASH_LENGTH_MAX * iter;
+                GetHash256(pComb, CodeLen, pRetDigistHash);
 
-                GetHash256(pComb, CodeLen, &strRetDigistHash[HASH_LENGTH_MAX * iter]);
-
-                if(memcmp(hash, &strRetDigistHash[HASH_LENGTH_MAX * iter], HASH_LENGTH_MAX) == 0)
+                if(memcmp(hash, pRetDigistHash, HASH_LENGTH_MAX) == 0)
                 {
                     trigger_time = omp_get_wtime() - start_time;
                     trigger_tid = omp_get_thread_num();
-                    //std::cout << "--------------START_Trigger_Time[tid = " << trigger_tid << "] = " << endtime << "sec. comb=" << comb << std::endl;
+                    //MSG("--------------START_Trigger_Time[tid = " << trigger_tid << "] = " << endtime << "sec. comb=" << comb << std::endl);
                     pwd = std::string(pComb, CodeLen);
                     IsFound = true;
                     save_iter = iteration;
-                    iter = maxCountIter+1;
+                    iter = block_size;
                     #pragma omp cancel for
-                    ++cancel_count;
                 }
 
-#ifdef PRINT_LOG
+#ifdef PRINT_ITER_LOG
                 #pragma omp critical
                 {
                     if(iteration % PrintInterval == 0)
                     {
-                        std::cout << "------------iteration = " << iteration << "." <<  std::endl;
+                        MSG("------------iteration = " << iteration << "." <<  std::endl);
                         CurrentPrintParallel(CodeLen, iteration, maxCountIter, start_time); 
                     }
                 }
 #endif
                 //double h2 = omp_get_wtime() - start_time;
-                //std::cout << "One hash iteration calcTime = " << h2 - h1 << std::endl;
+                //MSG("One hash iteration calcTime = " << h2 - h1 << std::endl);
             }
         }
     }
     delete[] comb;
     delete[] strRetDigistHash;
 
-    end_time = omp_get_wtime() - start_time;
-    std::cout << "------------Trigger_Time[tid = " << trigger_tid << "] = " << trigger_time << "sec." <<  std::endl;
-    std::cout << "------------TotalTime = " << end_time << "sec."<< std::endl;
-    std::cout << " -----------diff(TotalTime, Trigger_Time)= " << (end_time - trigger_time) << "sec." << std::endl;
-    std::cout << "------------save_iter = " << save_iter <<  std::endl;
-    std::cout << "------------cancel_count = " << cancel_count <<  std::endl;
-    return std::make_pair(end_time, pwd);
+    const double end_time = omp_get_wtime();
+    const double duration_time = end_time - start_time;
+    MSG("------------Trigger_Time[tid = " << trigger_tid << "] = " << trigger_time << "sec." <<  std::endl);
+    MSG("------------TotalTime = " << duration_time << "sec."<< std::endl);
+    MSG(" -----------diff(TotalTime, Trigger_Time)= " << (duration_time - trigger_time) << "sec." << std::endl);
+    MSG("------------save_iter = " << save_iter <<  std::endl);
+    WriteResultLog(numThreads, numCombs, duration_time, MaxCodeLen, numRegions, block_size);
+    return std::make_pair(duration_time, pwd);
 }
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[])
+{
+    const int PASSWORD_LENGTH_MAX = 10;
+    const int ALPHABET_SET_MAX_COUNT = 100;
+    const int PASSWORD_LENGTH_MIN = 1;
 
-    //omp_set_nested(2);
-    
     std::string password, hash, alphabet = "123";
     size_t MaxCodeLen = 0, MinCodeLen = 0;
     uint64_t block_size = 1;
 
-    std::cout << "Welcome to decoder!" << std::endl;
+    MSG("Welcome to decoder!" << std::endl);
     switch(argc)
     {
         case 1:{
-            std::cout << "Give me following:" << std::endl;
-            std::cout << std::setw(5) << "1. " <<  "sha256 hash" << " :string" << std::endl;
-            std::cout << std::setw(5) << "2. " <<  "MinCodeLen" << " :int" << std::endl;
-            std::cout << std::setw(5) << "3. " <<  "MaxCodeLen" << " :int" << std::endl;
-            std::cout << std::setw(5) << "4. " <<  "alphabet" << " :string" << std::endl;
-            std::cout << std::setw(5) << "5. " <<  "test-mode(run sequence alg also)" << " :string" << std::endl;
-            std::cout << std::setw(5) << "6. " <<  "numThreads" << " :int" << std::endl;
-            std::cout << std::setw(5) << "7. " <<  "block_size" << " :int" << std::endl;
-            std::cout <<  "####################" << std::endl;
+            MSG("Give me following:" << std::endl);
+            MSG(std::setw(5) << "1. " <<  "sha256 hash" << " :string" << std::endl);
+            MSG(std::setw(5) << "2. " <<  "MinCodeLen" << " :int" << std::endl);
+            MSG(std::setw(5) << "3. " <<  "MaxCodeLen" << " :int" << std::endl);
+            MSG(std::setw(5) << "4. " <<  "alphabet" << " :string" << std::endl);
+            MSG(std::setw(5) << "5. " <<  "test-mode(run sequence alg also)" << " :string" << std::endl);
+            MSG(std::setw(5) << "6. " <<  "numThreads" << " :int" << std::endl);
+            MSG(std::setw(5) << "7. " <<  "block_size" << " :int" << std::endl);
+            MSG("####################" << std::endl);
             return 1;
         }
         case 8:{
@@ -430,9 +303,9 @@ int main(int argc, char* argv[]){
         }
         case 2:{
             hash = std::string(argv[(1)]);
-	        if(hash.length() != HASH_LENGTH_MAX*2)
+	        if(!CheckValidHash(hash) || (hash.length() != HASH_LENGTH_MAX*2))
             {
-                std::cout << "Please input hash with length of " << HASH_LENGTH_MAX*2 << " chars!" << std::endl;
+                MSG("Please input hash with length of " << HASH_LENGTH_MAX*2 << " chars!" << std::endl);
 	            return 1;
             }
             break; 
@@ -441,59 +314,56 @@ int main(int argc, char* argv[]){
             break;
     }
 
-    std::cout << "  Your hash " << hash << std::endl;
-    std::cout << "  Your params for searching: " << std::endl;
-    std::cout << "    MinCodeLen: " << MinCodeLen << std::endl;
-    std::cout << "    MaxCodeLen: " << MaxCodeLen << std::endl;
-    std::cout << "    Alphabet for search: " << alphabet << std::endl;
-    //if(test_mode == false)
-    //    std::cout << "  Mask for search: " << mask << std::endl;
-    std::cout << "    block_size: " << block_size << std::endl;  
-    std::cout << "    test_mode: " << std::boolalpha << test_mode << std::endl;    
+    MSG("####### Input parameters:" << std::endl);
+    MSG("  Your hash " << hash << std::endl);
+    MSG("  Your params for searching: " << std::endl);
+    MSG("    MinCodeLen: " << MinCodeLen << std::endl);
+    MSG("    MaxCodeLen: " << MaxCodeLen << std::endl);
+    MSG("    Alphabet for search: " << alphabet << std::endl);
+    MSG("    block_size: " << block_size << std::endl);
+    MSG("    test_mode: " << std::boolalpha << test_mode << std::endl);
 
-    if(CheckValidHash(hash))
-    {
-        std::cout << " Let's hack the hash! " << std::endl;
-        std::cout << " Please wait .." << std::endl << std::endl;
-        std::string digistHash = HexToDigit(hash);
-        auto ret_pair = Parallel_hack(digistHash.c_str(), MinCodeLen, MaxCodeLen, alphabet, block_size);
-        double parallTimeWork = ret_pair.first;
-        std::string pwdParall = ret_pair.second;
-        if(IsFound){
-            std::cout << " Successful!" << std::endl; 
-            std::cout << " passwordPar = " << pwdParall << std::endl; 
-        }else{
-            std::cout << " Not Found!" << std::endl;
-        }
-
-        if(test_mode){
-            std::cout << " Please wait .." << std::endl << std::endl;
-            ret_pair = Sequent_hack(digistHash.c_str(), MinCodeLen, MaxCodeLen, alphabet);
-            double sequentTimeWork = ret_pair.first;
-            std::string pwdSequent = ret_pair.second;
-            if(IsFound){
-                std::cout << " Successful!" << std::endl; 
-                std::cout << " passwordSeq = " << pwdSequent << std::endl; 
-            }else{
-                std::cout << " Not Found!" << std::endl;
-		        pwdSequent += "_ThisIsSalt";
-            }
-
-            std::cout << std::endl << " Check the results ...";
-            if (pwdParall.compare(pwdSequent) == 0)
-            {
-                std::cout << "Successfully!!!" << std::endl;
-                PrintSpeedUpResults(sequentTimeWork, parallTimeWork);
-            }
-            else
-            {
-                std::cout << "Warning!!! Something went wrong." << std::endl;
-            }
-        }
+    MSG(" Let's hack the hash! " << std::endl);
+    MSG(" Please wait .." << std::endl << std::endl);
+    std::string digistHash = HexToDigit(hash);
+    auto ret_pair = Parallel_hack(digistHash.c_str(), MinCodeLen, MaxCodeLen, alphabet, block_size);
+    const double parallTimeWork = ret_pair.first;
+    const std::string pwdParall = ret_pair.second;
+    if(IsFound){
+        MSG(" Successful!" << std::endl);
+        MSG(" passwordPar = " << pwdParall << std::endl);
     }else{
-        //std::cout << " error! " << std::endl;
+        MSG(" Not Found!" << std::endl);
+    }
+
+#ifndef PRINT_LOG
+    std::cout << pwdParall << std::endl;
+#endif
+
+    if(test_mode){
+        MSG(" Please wait .." << std::endl << std::endl);
+        ret_pair = Sequent_hack(digistHash.c_str(), MinCodeLen, MaxCodeLen, alphabet);
+        const double sequentTimeWork = ret_pair.first;
+        std::string pwdSequent = ret_pair.second;
+        if(IsFound){
+            MSG(" Successful!" << std::endl);
+            MSG(" passwordSeq = " << pwdSequent << std::endl);
+        }else{
+            MSG(" Not Found!" << std::endl);
+            pwdSequent += "_ThisIsSalt";
+        }
+
+        MSG(std::endl << " Check the results ...");
+        if(pwdParall.compare(pwdSequent) == 0)
+        {
+            MSG("Successfully!!!" << std::endl);
+            PrintSpeedUpResults(sequentTimeWork, parallTimeWork);
+        }
+        else
+        {
+            MSG("Warning!!! Something went wrong." << std::endl);
+        }
     }
    //system("pause");
    return 0;
 }
-
