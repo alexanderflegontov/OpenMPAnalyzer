@@ -182,10 +182,11 @@ inline void CurrentPrintParallel(const int CodeLen, const int iter, const int ma
     <<  std::endl);
 }
 
-std::tuple<uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
+std::tuple<uint64_t, uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
                                                        const size_t MaxCodeLen,
                                                        std::string const &alphabet,
-                                                       const uint64_t block_size)
+                                                       const uint64_t block_size,
+                                                       const uint64_t num_threads)
 {
     uint64_t numRegions = 0;
     uint64_t numCombs = 0;
@@ -198,13 +199,18 @@ std::tuple<uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
         numCombs += currentMaxNumIters;
         numLostCombs += currentMaxNumIters % block_size;
     }
-    return std::make_tuple(numRegions, numCombs, numLostCombs);
+
+    uint64_t idle_threads = (num_threads > block_size) ?
+                                (num_threads - block_size) :
+                                block_size % num_threads;
+    return std::make_tuple(numRegions, numCombs, numLostCombs, idle_threads);
 }
 
-std::tuple<uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
+std::tuple<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
                                                        const size_t MaxCodeLen,
                                                        const std::vector<std::string> &alphabets,
-                                                       const uint64_t block_size)
+                                                       const uint64_t block_size,
+                                                       const uint64_t num_threads)
 {
     uint64_t numRegionsLvl2 = 0;
     uint64_t numCombs = 0;
@@ -222,7 +228,16 @@ std::tuple<uint64_t, uint64_t, uint64_t> CalculateInfo(const size_t MinCodeLen,
             numLostCombs += currentMaxNumIters % block_size;
         }
     }
-    return std::make_tuple(numRegionsLvl2, numCombs, numLostCombs);
+
+    uint64_t numThreadsLvl2, numThreadsLvl1;
+    numThreadsLvl2 = numThreadsLvl1 = num_threads;
+    const uint64_t idle_threadsLvl1 = (numThreadsLvl1 > alphabets.size()) ?
+                                      (numThreadsLvl1 - alphabets.size()) :
+                                      alphabets.size() % numThreadsLvl1;
+    const uint64_t idle_threadsLvl2 = (numThreadsLvl2 > block_size) ?
+                                      (numThreadsLvl2 - block_size) :
+                                      block_size % numThreadsLvl2;
+    return std::make_tuple(numRegionsLvl2, numCombs, numLostCombs, idle_threadsLvl1, idle_threadsLvl2);
 }
 
 #endif // __BENCH_LIB_HPP__

@@ -13,6 +13,7 @@
 
 
 const std::string OUTPUT_FILE = "benchmark2_all.out";
+static std::string CONFIG_FILE = "";
 
 static int numThreadsLvl1 = 1;
 static int numThreadsLvl2 = 1;
@@ -34,7 +35,8 @@ void WriteResultLog(const uint64_t numThreads,
                                       + std::to_string(numRegionsLvl2) + ","
                                       + std::to_string(block_size) + ","
                                       + std::to_string(numAlphabets) + ","
-                                      + std::to_string(oneAlphabetLen) + "\n";
+                                      + std::to_string(oneAlphabetLen) + ","
+                                      + CONFIG_FILE + "\n";
 
     int fd = open(OUTPUT_FILE.c_str(), O_WRONLY | O_APPEND | O_CREAT, S_IRWXU);
     if(fd == -1)
@@ -146,7 +148,7 @@ std::pair<double, std::vector<std::string>> Parallel_hack(const char* hash,
                                                           const uint64_t block_size)
 {
     MSG("####### Parallel_hack #######" << std::endl);
-    auto info = CalculateInfo(MinCodeLen, MaxCodeLen, alphabets, block_size);
+    auto info = CalculateInfo(MinCodeLen, MaxCodeLen, alphabets, block_size, numThreadsLvl1);
     const auto numRegionsLvl2 = std::get<0>(info);
     const auto numRegionsLvl1 = 1;
     const auto numRegions = numRegionsLvl1 + numRegionsLvl2;
@@ -166,7 +168,11 @@ std::pair<double, std::vector<std::string>> Parallel_hack(const char* hash,
     MSG("# block_size[regionCount=100] = " << numCombs / 100 << std::endl);
 
     MSG("########" << std::endl);
-    MSG("# num idle threads(lvl1) = " << alphabets.size() % numThreadsLvl1 << std::endl);
+    uint64_t idle_threadsLvl1 =  std::get<3>(info);
+    MSG("# num idle threads(lvl1) = " << idle_threadsLvl1 << std::endl);
+    uint64_t idle_threadsLvl2 = std::get<4>(info);
+    MSG("# num idle threads(lvl2) = " << idle_threadsLvl2 << std::endl);
+
     uint64_t totalSumCombs = 0;
     for(auto i = 0; i < alphabets.size(); ++i)
     {
@@ -174,7 +180,6 @@ std::pair<double, std::vector<std::string>> Parallel_hack(const char* hash,
         totalSumCombs += curMaxCombin;
         MSG("#comb for alphabets[" << i << "] = " << curMaxCombin << std::endl);
         MSG("# lost combs = " << curMaxCombin % block_size << std::endl);
-        MSG("# num idle threads(lvl2) = " << block_size % numThreadsLvl2 << std::endl);
         //MSG("# block_size[regionCount=100] = " << curMaxCombin / 100 << std::endl;
     }
 
@@ -362,6 +367,7 @@ int main(int argc, char* argv[])
             //{
             //    alphabet = std::string(argv[(4)]).substr(0, ALPHABET_SET_MAX_COUNT);
             //}
+            CONFIG_FILE = argv[(4)];
             std::ifstream myfile(argv[(4)]);
             if(myfile.is_open())
             {

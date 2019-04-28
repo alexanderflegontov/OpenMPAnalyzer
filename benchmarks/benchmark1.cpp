@@ -23,14 +23,18 @@ void WriteResultLog(const uint64_t numThreads,
                     const double duration_time,
                     const uint64_t CodeLen,
                     const uint64_t numRegions,
-                    const uint64_t block_size)
+                    const uint64_t block_size,
+                    const uint64_t alphabet_len,
+                    std::string const& alphabet)
 {
     std::string const &RESULT_CONTEXT = std::to_string(numThreads) + ","
                                       + std::to_string(numCombs) + ","
                                       + std::to_string(duration_time) + ","
                                       + std::to_string(CodeLen) + ","
                                       + std::to_string(numRegions) + ","
-                                      + std::to_string(block_size) + "\n";
+                                      + std::to_string(block_size) + ","
+                                      + std::to_string(alphabet_len) + ","
+                                      + alphabet + "\n";
 
     int fd = open(OUTPUT_FILE.c_str(), O_WRONLY | O_APPEND | O_CREAT, S_IRWXU);
     if(fd == -1)
@@ -138,7 +142,7 @@ std::pair<double, std::string> Parallel_hack(const char* hash,
 {
     MSG("####### Parallel_hack #######" << std::endl);
     const size_t lenAlp = alphabet.length();
-    auto info = CalculateInfo(MinCodeLen, MaxCodeLen, alphabet, block_size);
+    auto info = CalculateInfo(MinCodeLen, MaxCodeLen, alphabet, block_size, numThreads);
     const auto numRegions = std::get<0>(info);
     const auto numCombs = std::get<1>(info);
     const auto numLostCombs = std::get<2>(info);
@@ -170,7 +174,7 @@ std::pair<double, std::string> Parallel_hack(const char* hash,
     for(auto CodeLen = MinCodeLen; !IsFound && CodeLen <= MaxCodeLen; ++CodeLen)
     {
         const uint64_t maxCountIter = pow(lenAlp, CodeLen);
-    	//MSG("thread #" << omp_get_thread_num() << std::endl);
+        //MSG("thread #" << omp_get_thread_num() << std::endl);
 
     	const auto iterBlockMax = maxCountIter / block_size;
         for(auto iterBlock = 0; iterBlock < iterBlockMax; ++iterBlock)
@@ -231,7 +235,7 @@ std::pair<double, std::string> Parallel_hack(const char* hash,
     MSG("------------TotalTime = " << duration_time << "sec."<< std::endl);
     MSG(" -----------diff(TotalTime, Trigger_Time)= " << (duration_time - trigger_time) << "sec." << std::endl);
     MSG("------------save_iter = " << save_iter <<  std::endl);
-    WriteResultLog(numThreads, numCombs, duration_time, MaxCodeLen, numRegions, block_size);
+    WriteResultLog(numThreads, numCombs, duration_time, MaxCodeLen, numRegions, block_size, alphabet.length(), alphabet);
     return std::make_pair(duration_time, pwd);
 }
 
